@@ -1,0 +1,18 @@
+
+morph_pairs =  HSP90_81 > HSP90_82,
+HSP90_83 > HSP90_82,
+HSP90_81 > HSP90_82,
+HSP90_84 > HSP90_82,
+HSP90_83 > HSP90_82,
+HSP90_84 > HSP90_82,
+HSP90_81 > HSP90_82
+
+
+[protein]
+basedir = protein
+file.name = ack1_35.pdb
+molecules = SIM 
+
+[complex]
+pairs = SIM : 2, SIM : 3, SIM : 4, SIM : 5, SIM : 6, SIM : 7
+

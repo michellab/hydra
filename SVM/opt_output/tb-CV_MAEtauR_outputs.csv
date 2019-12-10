@@ -1,0 +1,16 @@
+Subject,Correlation Coefficient,Dataset,Correlation metric
+absolute,0.6439347552984159,dG(hydr),Pearson's-r
+absolute,0.4868297778455183,dG(hydr),Kendall's-tau
+absolute,0.729747797055179,dG(hydr),MAE/MAD
+absolute,0.5270659144758285,dG(hydr),Pearson's-r
+absolute,0.4298830908043804,dG(hydr),Kendall's-tau
+absolute,0.7465545611185492,dG(hydr),MAE/MAD
+absolute,0.7818043130550796,dG(hydr),Pearson's-r
+absolute,0.5756727361789621,dG(hydr),Kendall's-tau
+absolute,0.6003181929027839,dG(hydr),MAE/MAD
+absolute,0.7339065629038386,dG(hydr),Pearson's-r
+absolute,0.5496077096625825,dG(hydr),Kendall's-tau
+absolute,0.6149963579246042,dG(hydr),MAE/MAD
+absolute,0.6386774836333178,dG(hydr),Pearson's-r
+absolute,0.5508590497241831,dG(hydr),Kendall's-tau
+absolute,0.6386055953937184,dG(hydr),MAE/MAD

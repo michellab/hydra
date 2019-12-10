@@ -1,0 +1,72 @@
+Name,Description
+nAcid,acidic group count
+nBase,basic group count
+nAromAtom,aromatic atoms count
+nAromBond,aromatic bonds count
+nAtom,number of all atoms
+nHeavyAtom,number of heavy atoms
+nSpiro,number of spiro atoms
+nBridgehead,number of bridgehead atoms
+nHetero,number of hetero atoms
+BertzCT,Bertz CT (complexity)
+nBonds,number of all bonds in non-kekulized structure
+nBondsO,number of bonds connecting to heavy atom in non-kekulized structure
+nBondsS,number of single bonds in non-kekulized structure
+nBondsD,number of double bonds in non-kekulized structure
+nBondsT,number of triple bonds in non-kekulized structure
+nBondsA,number of aromatic bonds in non-kekulized structure
+nBondsM,number of multiple bonds in non-kekulized structure
+nBondsKS,number of single bonds in kekulized structure
+nBondsKD,number of double bonds in kekulized structure
+PNSA1,partial negative surface area (version 1)
+PPSA1,partial positive surface area (version 1)
+DPSA1,difference in charged partial surface area (version 1)
+FNSA1,fractional charged partial negative surface area (version 1)
+FPSA1,fractional charged partial positive surface area (version 1)
+WNSA1,surface weighted charged partial negative surface area (version 1)
+WPSA1,surface weighted charged partial positive surface area (version 1)
+RNCG,relative negative charge
+RPCG,relative positive charge
+RNCS,relative negative charge surface area
+RPCS,relative positive charge surface area
+TASA,total hydrophobic surface area
+TPSA,total polar surface area
+RASA,relative hydrophobic surface area
+RPSA,relative polar surface area
+HybRatio,hybridization ratio
+FCSP3,the fraction of C atoms that are SP3 hybridized
+AETA_beta,averaged valence electron mobile count
+ETA_beta_s,sigma contribution to valence electron mobile count
+AETA_beta_s,averaged sigma contribution to valence electron mobile count
+ETA_beta_ns,nonsigma contribution to valence electron mobile count
+AETA_beta_ns,averaged nonsigma contribution to valence electron mobile count
+ETA_beta_ns_d,delta contribution to valence electron mobile count
+AETA_beta_ns_d,averaged delta contribution to valence electron mobile count
+ETA_eta,ETA composite index for reference graph
+AETA_eta,averaged ETA composite index for reference graph
+ETA_eta_L,local ETA composite index for reference graph
+AETA_eta_L,averaged local ETA composite index for reference graph
+fragCpx,fragment complexity
+fMF,molecular framework ratio
+nHBAcc,number of hydrogen bond acceptor
+nHBDon,number of hydrogen bond donor
+apol,atomic polarizability
+bpol,bond polarizability
+nRing,ring count
+n3Ring,3-membered ring count
+n4Ring,4-membered ring count
+n5Ring,5-membered ring count
+n6Ring,6-membered ring count
+nRot,rotatable bonds count
+RotRatio,rotatable bonds ratio
+SLogP,Wildman-Crippen LogP
+SMR,Wildman-Crippen MR (molar refractivity)
+TopoPSA,topological polar surface area
+GGI1,1-ordered raw topological charge
+GGI2,2-ordered raw topological charge
+Vabc,ABC van der waals volume
+MW,exact molecular weight
+AMW,averaged exact molecular weight
+WPath,Wiener index
+WPol,Wiener polarity index
+Zagreb1,Zagreb index (version 1)

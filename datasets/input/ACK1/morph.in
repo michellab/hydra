@@ -1,0 +1,50 @@
+FE_type = Sire
+#mcs.match_by = spatially-closest
+AFE.separate_vdw_elec = False
+
+gaff = gaff2
+
+[ligand]
+basedir = poses
+file.name = ligand.mol2
+molecules = 2, 3, 4, 5, 6, 7
+box.type = rectangular
+
+morph_pairs = ACK1_2 > ACK1_3,
+ACK1_3 > ACK1_2,
+ACK1_2 > ACK1_5,
+ACK1_5 > ACK1_2,
+ACK1_2 > ACK1_6,
+ACK1_6 > ACK1_2,
+ACK1_3 > ACK1_4,
+ACK1_4 > ACK1_3,
+ACK1_3 > ACK1_5,
+ACK1_5 > ACK1_3,
+ACK1_3 > ACK1_6,
+ACK1_6 > ACK1_3,
+ACK1_3 > ACK1_7,
+ACK1_7 > ACK1_3,
+ACK1_4 > ACK1_6,
+ACK1_6 > ACK1_4,
+ACK1_4 > ACK1_7,
+ACK1_7 > ACK1_4,
+ACK1_5 > ACK1_6,
+ACK1_6 > ACK1_5,
+ACK1_6 > ACK1_7,
+ACK1_7 > ACK1_6,
+ACK1_44 > ACK1_45,
+ACK1_45 > ACK1_44,
+ACK1_16 > ACK1_45,
+ACK1_45 > ACK1_16,
+ACK1_16 > ACK1_44,
+ACK1_44 > ACK1_16,
+
+
+[protein]
+basedir = protein
+file.name = ack1_35.pdb
+molecules = SIM 
+
+[complex]
+pairs = SIM : 2, SIM : 3, SIM : 4, SIM : 5, SIM : 6, SIM : 7
+

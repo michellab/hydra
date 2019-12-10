@@ -1,0 +1,75 @@
+FE_type = Sire
+AFE.separate_vdw_elec = False
+mcs.match_by = spatially-closest
+
+[globals]
+forcefield = amber, ff14SB, tip3p
+gaff = gaff2
+logfile = dGmorph.log
+
+[ligand]
+basedir = poses
+file.name = ligand.pdb
+box.type = rectangular
+
+morph_pairs = FXR79 > INT01 , 
+INT01 > FXR79, 
+              FXR73  > INT01,  
+INT01  > FXR73, 
+              
+              FXR75  > INT01 , 
+INT01  > FXR75, 
+              INT01   > FXR10, 
+FXR10 > INT01,            
+              FXR10  > INT02     , 
+INT02      > FXR10,                 
+               
+              FXR76      > INT02 , 
+INT02   > FXR76 , 
+              FXR76      > FXR78    , 
+FXR78     > FXR76    , 
+              
+              FXR76      > FXR89    , 
+FXR89     > FXR76    , 
+              
+              FXR76      > FXR77, 
+FXR77 > FXR76    ,
+              FXR77  > FXR81 , 
+FXR81 > FXR77,
+              FXR76      > FXR81, 
+FXR81 > FXR76    ,
+              FXR76      > FXR82, 
+FXR82 > FXR76    ,
+              FXR81  > FXR82, 
+FXR82 > FXR81,
+              FXR76      > FXR83, 
+FXR83 > FXR76    ,
+              FXR82  > FXR83, 
+FXR83 > FXR82,
+              FXR76      > FXR88, 
+FXR88 > FXR76    ,
+              FXR76      > FXR85,
+ FXR85 > FXR76    ,
+              FXR88  > FXR85, 
+FXR85 > FXR88,
+              FXR76      > FXR74, 
+FXR74 > FXR76    ,
+              FXR74  > FXR85, 
+FXR85 > FXR74,
+              FXR76      > FXR84, 
+FXR84 > FXR76    ,
+              FXR84  > FXR74, 
+FXR74 > FXR84,
+              FXR76      > FXR12, 
+FXR12 > FXR76    ,
+              FXR12  > FXR84, 
+FXR84 > FXR12,
+             
+[protein]
+basedir = protein
+file.name = fxr_md_v4_wat.pdb
+molecules = SIM 
+
+[complex]
+box.type = rectangular
+

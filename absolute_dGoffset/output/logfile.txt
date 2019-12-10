@@ -1,0 +1,11 @@
+————————————— Starting SVR Bayesian optimization —————————————
+PCA threshold: 0.95
+n replicates: 30
+n models in ensemble: 10
+n calls (BO): 40
+Started program at: Tue Dec 10 08:46:30 2019
+Finished fold	1	at	Tue Dec 10 08:46:37 2019
+Finished fold	2	at	Tue Dec 10 08:46:43 2019
+Finished fold	3	at	Tue Dec 10 08:46:49 2019
+Finished fold	4	at	Tue Dec 10 08:46:54 2019
+Finished fold	5	at	Tue Dec 10 08:47:00 2019

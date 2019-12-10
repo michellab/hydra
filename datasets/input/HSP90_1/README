@@ -1,0 +1,6 @@
+correct indexing for the ligands; they were all +1
+constructed toy morph.in from FEP results.
+picked only BMs with least hysteresis of the two, if similar then picked the BM with most divergent ddGs
+
+
+for f in *.def; do name=$(echo $f | sed 's/2YK2-//g' | sed 's/.def//g'); sed '1,/TER/d' $f > $name; done

@@ -1,0 +1,81 @@
+FE_type = Sire
+AFE.separate_vdw_elec = False
+mcs.match_by = spatially-closest
+
+[globals]
+forcefield = amber, ff14SB, tip3p
+gaff = gaff2
+logfile = dGmorph.log
+
+[ligand]
+basedir = poses
+file.name = ligand.sdf
+box.type = rectangular
+neutralize = False
+
+morph_pairs = cdk2_lig1 > cdk2_lig11, 
+cdk2_lig11 > cdk2_lig1, 
+              cdk2_lig1 > cdk2_lig16, 
+cdk2_lig16 > cdk2_lig1, 
+              cdk2_lig2 > cdk2_lig7, 
+cdk2_lig7 > cdk2_lig2, 
+              cdk2_lig3 > cdk2_lig12, 
+cdk2_lig12 > cdk2_lig3, 
+              cdk2_lig4 > cdk2_lig3, 
+cdk2_lig3 > cdk2_lig4, 
+              cdk2_lig5 > cdk2_lig9, 
+cdk2_lig9 > cdk2_lig5, 
+              cdk2_lig7 > cdk2_lig5, 
+cdk2_lig5 > cdk2_lig7, 
+              cdk2_lig8 > cdk2_lig15, 
+cdk2_lig15 > cdk2_lig8, 
+              cdk2_lig9 > cdk2_lig8, 
+cdk2_lig8 > cdk2_lig9, 
+              cdk2_lig9 > cdk2_lig14, 
+cdk2_lig14 > cdk2_lig9, 
+              cdk2_lig10 > cdk2_lig4, 
+cdk2_lig4 > cdk2_lig10, 
+              cdk2_lig11 > cdk2_lig2, 
+cdk2_lig2 > cdk2_lig11, 
+              cdk2_lig11 > cdk2_lig5, 
+cdk2_lig5 > cdk2_lig11, 
+              cdk2_lig11 > cdk2_lig7, 
+cdk2_lig7 > cdk2_lig11, 
+              cdk2_lig1 > cdk2_lig12, 
+cdk2_lig12 > cdk2_lig1,
+              cdk2_lig16 > cdk2_lig12, 
+cdk2_lig12 > cdk2_lig16, 
+              cdk2_lig13 > cdk2_lig6, 
+cdk2_lig6 > cdk2_lig13, 
+              cdk2_lig14 > cdk2_lig8, 
+cdk2_lig8 > cdk2_lig14, 
+              cdk2_lig14 > cdk2_lig15, 
+cdk2_lig15 > cdk2_lig14, 
+              cdk2_lig16 > cdk2_lig4, 
+cdk2_lig4 > cdk2_lig16, 
+              cdk2_lig16 > cdk2_lig6, 
+cdk2_lig6 > cdk2_lig16, 
+              cdk2_lig16 > cdk2_lig8, 
+cdk2_lig8 > cdk2_lig16, 
+              cdk2_lig16 > cdk2_lig10, 
+cdk2_lig10 > cdk2_lig16, 
+              cdk2_lig16 > cdk2_lig11, 
+cdk2_lig11 > cdk2_lig16, 
+              cdk2_lig16 > cdk2_lig13, 
+cdk2_lig13 > cdk2_lig16, 
+              cdk2_lig16 > cdk2_lig15, 
+cdk2_lig15 > cdk2_lig16,
+		cdk2_lig5 > cdk2_lig9, 
+cdk2_lig9 > cdk2_lig5, 
+              cdk2_lig7 > cdk2_lig5, 
+cdk2_lig5 > cdk2_lig7, 
+              cdk2_lig11 > cdk2_lig5, 
+cdk2_lig5 > cdk2_lig11
+
+[protein]
+basedir = protein
+file.name = cdk2_protein_prepared.pdb
+molecules = CDK2
+
+[complex]
+box.type = rectangular
