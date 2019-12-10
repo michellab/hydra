@@ -1,0 +1,71 @@
+FE_type = Sire
+AFE.separate_vdw_elec = False
+mcs.match_by = spatially-closest
+
+[globals]
+forcefield = amber, ff14SB, tip3p
+gaff = gaff2
+logfile = dGmorph.log
+
+[ligand]
+basedir = poses
+file.name = ligand.pdb
+box.type = rectangular
+
+morph_pairs = INT01 > FXR49, 
+FXR49 > INT01, 
+FXR102 > INT01, 
+INT01 > FXR102, 
+              FXR49 > FXR46, 
+FXR46 > FXR49, 
+FXR49 > FXR91, 
+FXR91 > FXR49, 
+
+
+
+              FXR91 > INT02, 
+INT02 > FXR91, 
+
+INT02 > FXR47, 
+FXR47 > INT02, 
+              FXR91 > FXR93, 
+FXR93 > FXR91, 
+FXR91 > FXR101, 
+FXR101 > FXR91,
+              FXR46 > FXR100, 
+FXR100 > FXR46, 
+FXR46 > FXR98, 
+FXR98 > FXR46, 
+              FXR46 > FXR96, 
+FXR96 > FXR46, 
+FXR91 > FXR96, 
+FXR96 > FXR91, 
+              FXR91 > FXR99, 
+FXR99 > FXR91, 
+FXR96 > FXR17, 
+FXR17 > FXR96,
+              FXR96 > FXR98, 
+FXR98 > FXR96, 
+FXR98 > FXR100, 
+FXR100 > FXR98, 
+              FXR96 > FXR95, 
+FXR95 > FXR96, 
+FXR99 > FXR95, 
+FXR95 > FXR99, 
+              FXR95 > FXR17, 
+FXR17 > FXR95, 
+FXR17 > FXR45, 
+FXR45 > FXR17, 
+              FXR95 > FXR48, 
+FXR48 > FXR95, 
+FXR17 > FXR48, 
+FXR48 > FXR17
+
+[protein]
+basedir = protein
+file.name = fxr_md_v2_wat_mined_withlig.pdb
+molecules = SIM 
+
+[complex]
+box.type = rectangular
+

@@ -1,0 +1,51 @@
+FE_type = Sire
+AFE.separate_vdw_elec = False
+mcs.match_by = spatially-closest
+
+[globals]
+forcefield = amber, ff14SB, tip3p
+gaff = gaff2
+logfile = dGmorph.log
+
+[ligand]
+basedir = poses
+file.name = ligand.sdf
+box.type = rectangular
+neutralize = False
+
+morph_pairs = 
+throm_schr_lig1a > throm_schr_lig1b, 
+throm_schr_lig1b > throm_schr_lig1a, 
+throm_schr_lig1a > throm_schr_lig5, 
+throm_schr_lig5 > throm_schr_lig1a, 
+throm_schr_lig1b > throm_schr_lig3a, 
+throm_schr_lig3a > throm_schr_lig1b, 
+throm_schr_lig1c > throm_schr_lig1a, 
+throm_schr_lig1a > throm_schr_lig1c, 
+throm_schr_lig1c > throm_schr_lig1b, 
+throm_schr_lig1b > throm_schr_lig1c, 
+throm_schr_lig1c > throm_schr_lig1d, 
+throm_schr_lig1d > throm_schr_lig1c, 
+throm_schr_lig1d > throm_schr_lig1b, 
+throm_schr_lig1b > throm_schr_lig1d, 
+throm_schr_lig3a > throm_schr_lig3b, 
+throm_schr_lig3b > throm_schr_lig3a, 
+throm_schr_lig3a > throm_schr_lig5, 
+throm_schr_lig5 > throm_schr_lig3a, 
+throm_schr_lig3a > throm_schr_lig6a, 
+throm_schr_lig6a > throm_schr_lig3a, 
+throm_schr_lig3a > throm_schr_lig6b, 
+throm_schr_lig6b > throm_schr_lig3a, 
+throm_schr_lig3a > throm_schr_lig7a, 
+throm_schr_lig7a > throm_schr_lig3a, 
+throm_schr_lig5 > throm_schr_lig6e, 
+throm_schr_lig6e > throm_schr_lig5, 
+
+[protein]
+basedir = protein
+ssbond = False
+file.name = thrombin.pdb
+molecules = THROM
+
+[complex]
+box.type = rectangular
