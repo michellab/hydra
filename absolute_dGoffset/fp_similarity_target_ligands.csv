@@ -1,0 +1,11 @@
+ID,Experimental dGhydr (kcal/mol),Calculated dGhydr (kcal/mol),Calculated dGhydr absolute error (kcal/mol),Corrected calculated dGhydr (kcal/mol),Corrected calculated dGhydr absolute error (kcal/mol)
+mobley_7417968,-3.2,-3.35,0.15,-3.05,0.15
+mobley_4936555,-9.53,-10.98,1.45,-9.24,0.29
+mobley_242480,-2.49,-2.96,0.47,-2.19,0.3
+mobley_3265457,-6.44,-5.98,0.46,-6.13,0.31
+mobley_2126135,-4.09,-3.59,0.5,-4.52,0.43
+mobley_7913234,-2.53,-3.52,0.99,-5.3,2.77
+mobley_4479135,-11.85,-15.25,3.4,-15.12,3.27
+mobley_8052240,-4.68,-8.81,4.13,-8.06,3.38
+mobley_5006685,-23.62,-18.16,5.46,-18.1,5.52
+mobley_4587267,-5.31,-5.75,0.44,-11.11,5.8
