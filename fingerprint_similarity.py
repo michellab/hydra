@@ -1,6 +1,5 @@
 # General:
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -11,20 +10,12 @@ from sklearn.model_selection import KFold
 from rdkit import Chem
 from rdkit import DataStructs
 
-import matplotlib.pyplot as plt
-import numpy as np
-from scipy.stats import gaussian_kde
-
+# File path variables
 absolute_dGoffset_path = './absolute_dGoffset/'
-
 offset_col_name = 'dGoffset (kcal/mol)'
+train_dr = absolute_dGoffset_path + 'train_dr/'
+test_dr = absolute_dGoffset_path + 'test_dr/'
 
-# set data processing configurations:
-PCA_threshold = 0.95  # Keeps n dimensions for x variance explained
-replicates = 30  # Number of replicates per subject model
-n_calls = 40  # Number of Bayesian optimisation loops for hyperparameter optimisation, 40 is best for convergence, > 60 scales to very expensive
-startpoint_BO = np.inf  # Point to consider top-performing model from (MAE/MAD); 1.0 = no improvement on test-set variance
-ensemble_size = 10  # Amount of top-scoring models to retain per fold-dataset combination
 # KFold parameters:
 n_splits = 5  # Number of K-fold splits
 random_state = 2  # Random number seed
@@ -55,44 +46,43 @@ def split_dataset(dataset, n_splits, random_state):
 
     return kfolds
 
+
 if __name__ == '__main__':
 
-    train_df_save_loc = absolute_dGoffset_path + 'train_data.csv'
-    train_df = pd.read_csv(train_df_save_loc, index_col='Unnamed: 0')
-    train_dr = absolute_dGoffset_path + 'train_dr/'
+    # load dfs
+    train_df = pd.read_csv(absolute_dGoffset_path + 'train_data.csv', index_col='Unnamed: 0')
+    test_df = pd.read_csv(absolute_dGoffset_path + 'test_data.csv')
+    test_df_ID = pd.read_csv(absolute_dGoffset_path + 'test_data_index.csv', index_col='Unnamed: 0')
 
-    test_df_save_loc = absolute_dGoffset_path + 'test_data.csv'
-    test_dr = absolute_dGoffset_path + 'test_dr/'
-    test_df = pd.read_csv(test_df_save_loc)
-
-    test_df_index_save_loc = absolute_dGoffset_path + 'test_data_index.csv'
-    test_df_ID = pd.read_csv(test_df_index_save_loc, index_col='Unnamed: 0')
+    # test set IDs
     test_ID = test_df_ID.index.tolist()
 
-    worst_best_df = pd.read_csv(absolute_dGoffset_path + 'worst_best_ligands.csv', index_col='ID')
-    worst_best_ID = worst_best_df.index.tolist()
-    worst_best_MAE = worst_best_df.iloc[:, 4].tolist()
+    # selected external test set data
+    target_df = pd.read_csv(absolute_dGoffset_path + 'fp_similarity_target_ligands.csv', index_col='ID')
+    target_df = target_df.head()
+    target_ID = target_df.index.tolist()
+    target_MAE = target_df.iloc[:, 4].tolist()
 
+    # simulate the same 5-fold splitting
     kfolds = split_dataset(train_df, n_splits, random_state)
 
-    for mol, MAE in zip(worst_best_ID, worst_best_MAE):
+    # initiate grid plot
+    fig, axs = plt.subplots(nrows=n_splits,
+                            ncols=len(target_ID),
+                            figsize=(15, 6),
+                            facecolor='w',
+                            edgecolor='k',
+                            sharex=True,
+                            sharey=True,)
 
-        trgt_suppl = Chem.SDMolSupplier(test_dr + str(mol) + '.sdf')
-        trgt_fp = Chem.RDKFingerprint(trgt_suppl[0])
+    # iterate through all selected external test set data
+    for j, mol, MAE in zip(range(len(target_ID)), target_ID, target_MAE):
 
-        ID = mol
+        # target external test set entry fingerprint generation
+        target_suppl = Chem.SDMolSupplier(test_dr + str(mol) + '.sdf')
+        target_fp = Chem.RDKFingerprint(target_suppl[0])
 
-        fig, axs = plt.subplots(1, 5,
-                                figsize=(15, 6),
-                                facecolor='w',
-                                edgecolor='k',
-                                sharex=True,
-                                sharey=True)
-        # fig.subplots_adjust(hspace=.5, wspace=.001)
-
-        fig.suptitle(ID + ' training and validation fingerprint similarity densities\nMAE: '
-                     + str(MAE) + ' (kcal/mol)')
-
+        # add shared x and y axis labels
         # add a big axis, hide frame
         fig.add_subplot(111, frameon=False)
         # hide tick and tick label of the big axis
@@ -100,62 +90,64 @@ if __name__ == '__main__':
         plt.xlabel('Fingerprint similarity')
         plt.ylabel('Density')
 
-        fold_num = 1
-        for i, fold in zip(range(5), kfolds):
+        # iterate through each fold for selected targeted external test set entry
+        for i, fold in zip(range(n_splits), kfolds):
+
+            fold_num = j + 1
+
+            # retrieve IDs
             train_IDs = fold[0][0].index.tolist()
             validate_IDs = fold[0][1].index.tolist()
 
             # retrieve SDFs
-            train_suppl = [Chem.SDMolSupplier(train_dr + str(sdf) + '.sdf')
-                           for sdf in train_IDs]
-
-            valdtn_suppl = [Chem.SDMolSupplier(train_dr + str(sdf) + '.sdf')
-                            for sdf in validate_IDs]
+            train_suppl = [Chem.SDMolSupplier(train_dr + str(sdf) + '.sdf') for sdf in train_IDs]
+            valdtn_suppl = [Chem.SDMolSupplier(train_dr + str(sdf) + '.sdf') for sdf in validate_IDs]
 
             # generate fingerprints
             train_fp = [Chem.RDKFingerprint(mol[0]) for mol in train_suppl]
             valdtn_fp = [Chem.RDKFingerprint(mol[0]) for mol in valdtn_suppl]
 
             # compute similarities
-            train_similarity = [DataStructs.FingerprintSimilarity(trgt_fp, train_mol)
-                                for train_mol in train_fp]
+            train_similarity = [DataStructs.FingerprintSimilarity(target_fp, train_mol) for train_mol in train_fp]
+            valdnt_similarity = [DataStructs.FingerprintSimilarity(target_fp, valdnt_mol) for valdnt_mol in valdtn_fp]
 
-            valdnt_similarity = [DataStructs.FingerprintSimilarity(trgt_fp, valdnt_mol)
-                                for valdnt_mol in valdtn_fp]
-
-            # density plot
+            # plot densities
             sns.distplot(train_similarity,
                          hist=False,
                          kde=True,
-                         kde_kws={'linewidth': 3},
+                         kde_kws={'linewidth': 2},
                          label='Train similarity',
-                         ax=axs[i])
+                         ax=axs[i, j])
 
             sns.distplot(valdnt_similarity,
                          hist=False,
                          kde=True,
-                         kde_kws={'linewidth': 3},
+                         kde_kws={'linewidth': 2},
                          label='Validation similarity',
-                         ax=axs[i])
+                         ax=axs[i, j])
 
-            ############# uncomment when grid is used #############
-            #
-            # for i, row in enumerate(axs):
-            #     for j, cell in enumerate(row):
-            #         cell.imshow(np.random.rand(32, 32))
-            #         if i == len(axs) - 1:
-            #             cell.set_xlabel("noise column: {0:d}".format(j + 1))
-            #         if j == 0:
-            #             cell.set_ylabel("noise row: {0:d}".format(i + 1))
-            #
-            # plt.tight_layout()
+            # remove all subplot legends and add global legend
+            axs[i, j].get_legend().remove()
+            handles, labels = axs[i, j].get_legend_handles_labels()
+            # fig.legend(handles, labels, loc='lower center')
+            fig.legend(handles, labels,
+                       loc='lower center',
+                       bbox_to_anchor=(0.5, 0.0),
+                       ncol=2)
 
-            axs[i].set_title('Fold ' + str(fold_num))
-            axs[i].get_legend().remove()
-            handles, labels = axs[i].get_legend_handles_labels()
-            fig.legend(handles, labels, loc='right')
-            save_loc = absolute_dGoffset_path + ID + '_fold_' + str(fold_num) + '_fp_hist.png'
-            plt.savefig(save_loc)
+    # add row and column labels
+    for x, row in enumerate(axs):
+        for y, cell in enumerate(row):
+            if x == 0:
+                cell.xaxis.set_label_position('top')
+                cell.set_xlabel('{}\nMAE: {} kcal/mol'.format(target_ID[y], target_MAE[y]),
+                                labelpad=10)
+            if y == len(target_ID) - 1:
+                cell.yaxis.set_label_position('right')
+                cell.set_ylabel('Fold {}'.format(x + 1),
+                                labelpad=25,
+                                rotation=0)
 
-            fold_num += 1
-
+    plt.tight_layout()
+    plt.savefig(absolute_dGoffset_path + 'train_test_fingerprint_similarity.png')
+    print('Finished plotting figure.')
