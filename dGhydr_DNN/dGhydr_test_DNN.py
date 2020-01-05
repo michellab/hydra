@@ -104,7 +104,7 @@ def main():
 
     # load in kfolds nested list from training
     with open(path + 'kfolds.json', "rb") as jsonfile:
-        kfolds = json.load(jsonfile)
+        kfolds = pickle.load(jsonfile)
 
     # testing
     print('––––––––––––––––––––––––––––––––––––––––––––––––')
