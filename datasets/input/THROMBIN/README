@@ -1,5 +1,0 @@
-morph.in was missing from backup so created toy file using the perts in the FEP output summary.
-
-
-ligands 3k and 3b had to be excluded because of faulty coordinates in systems files (see ML/sourced_datasets/THROMBIN/)
-correction: reconstructed the ligands using 3H and 3C, resp.

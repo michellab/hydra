@@ -1,3 +1,0 @@
-picked only binding mode 1 because it isn't very relevant to feed both binding poses into the learning model. The point is to learn from offset for a diverse range of poses, not overcrowd the training data with highly similar poses of identical ligands.
-
-appended all protocols
