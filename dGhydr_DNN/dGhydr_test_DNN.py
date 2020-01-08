@@ -57,8 +57,9 @@ from mordred import Calculator, descriptors
 
 # global variables
 path = './'
-SDF_dr = '../datasets/sdffiles/'
-freesolv_loc = '../datasets/database.txt'
+datasets_dr = '../datasets/'
+SDF_dr = datasets_dr + 'sdffiles/'
+freesolv_loc = datasets_dr + 'freesolv_database.txt'
 train_dr = path + 'train_dr/'
 test_dr = path + 'test_dr/'
 output_dr = path + 'output/'
@@ -443,7 +444,7 @@ def calc_mae(dataframe, model):
     return MAE
 
 
-def svr_predict(model_num, test_entry):
+def model_predict(model_num, test_entry):
 
     model = tf.keras.models.load_model(output_dr + 'fold_' + str(model_num) + '_' + model_type + '_model.h5')
 
@@ -458,7 +459,7 @@ def predict_offset(test_set):
     print('Predicting offsets...')
 
     # load in testing set
-    test_ID = test_set.index
+    test_ID = test_set.index.tolist()
     test_X = test_set.drop(columns='dGoffset (kcal/mol)').values
     test_y = test_set['dGoffset (kcal/mol)'].values
 
@@ -470,17 +471,18 @@ def predict_offset(test_set):
     for model in num_models:
 
         # call SVR prediction function
-        svr_rst = svr_predict(model, test_X)
+        model_rst = model_predict(model, test_X)
+        model_rst = [float(x) for x in model_rst]
 
         # write results per fold into dictionary and load into df
-        model_rst = {}
-        model_rst['ID'] = test_ID
-        model_rst['Model number'] = [model for i in range(41)]
-        model_rst['Experimental dGoffset (kcal/mol)'] = test_y
-        model_rst['Predicted dGoffset (kcal/mol)'] = svr_rst
-        model_rst['Absolute error (kcal/mol)'] = abs(test_y - svr_rst)
+        rst_dict = {}
+        rst_dict['ID'] = test_ID
+        rst_dict['Model number'] = [model for i in range(41)]
+        rst_dict['Experimental dGoffset (kcal/mol)'] = test_y
+        rst_dict['Predicted dGoffset (kcal/mol)'] = model_rst
+        rst_dict['Absolute error (kcal/mol)'] = [float(abs(x-y)) for x, y in zip(test_y, model_rst)]
 
-        test_rst = pd.concat([test_rst, pd.DataFrame(model_rst)])
+        test_rst = pd.concat([test_rst, pd.DataFrame(rst_dict)])
 
     # calculate MAE values
     MAE_lst = [calc_mae(test_rst, model) for model in num_models]

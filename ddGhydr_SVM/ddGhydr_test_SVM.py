@@ -56,13 +56,13 @@ from mordred import Calculator, descriptors
 
 # global variables
 path = './'
-SDF_dr = '../datasets/sdffiles/'
-freesolv_loc = '../datasets/database.txt'
+datasets_dr = '../datasets/'
+SDF_dr = datasets_dr + 'sdffiles/'
+freesolv_loc = datasets_dr + 'database.txt'
 train_dr = path + 'train_dr/'
 test_dr = path + 'test_dr/'
 output_dr = path + 'output/'
 figures_dr = path + 'figures/'
-
 #
 offset_col_name = 'ddGoffset (kcal/mol)'
 # SAMPl4_Guthrie experimental reference in FreeSolv.

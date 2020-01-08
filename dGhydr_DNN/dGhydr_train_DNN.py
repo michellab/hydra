@@ -57,8 +57,9 @@ from mordred import Calculator, descriptors
 
 # global variables
 path = './'
-SDF_dr = '../datasets/sdffiles/'
-freesolv_loc = '../datasets/database.txt'
+datasets_dr = '../datasets/'
+SDF_dr = datasets_dr + 'sdffiles/'
+freesolv_loc = datasets_dr + 'database.txt'
 train_dr = path + 'train_dr/'
 test_dr = path + 'test_dr/'
 output_dr = path + 'output/'
@@ -135,6 +136,8 @@ def main():
     run_regressor(kfolds)
     print('Training complete.')
     logging.info('Training complete.')
+
+    logging.info('Finished dGhydr_train_{}.py.'.format(model_type))
 
     ####################### set two main report colour themes and one extra #######################
 
@@ -794,7 +797,7 @@ def get_descriptors():
         mordred_df = pd.read_csv(save_loc)
         print('Calculated Mordred descriptors loaded in.')
     else:
-        descriptors_raw = open('../datasets/mordred_descriptors/all_descriptors.txt', 'r')
+        descriptors_raw = open(datasets_dr + 'all_mordred_descriptors.txt', 'r')
         descriptors_raw_list = [line.split('\n') for line in descriptors_raw.readlines()]
         descriptors_list = [desc[0] for desc in descriptors_raw_list]
         print('Number of descriptors:', str(len(descriptors_list)))
