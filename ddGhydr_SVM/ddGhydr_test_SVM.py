@@ -1,12 +1,7 @@
 # General:
 import pandas as pd
 import numpy as np
-import os
-import csv
-import subprocess
 import time
-import shutil
-import glob
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
 import seaborn as sns
@@ -58,11 +53,12 @@ from mordred import Calculator, descriptors
 path = './'
 datasets_dr = '../datasets/'
 SDF_dr = datasets_dr + 'sdffiles/'
-freesolv_loc = datasets_dr + 'database.txt'
-train_dr = path + 'train_dr/'
-test_dr = path + 'test_dr/'
+freesolv_loc = datasets_dr + 'freesolv_database.txt'
+train_dr = datasets_dr + 'train_dr/'
+test_dr = datasets_dr + 'test_dr/'
 output_dr = path + 'output/'
 figures_dr = path + 'figures/'
+
 #
 offset_col_name = 'ddGoffset (kcal/mol)'
 # SAMPl4_Guthrie experimental reference in FreeSolv.
