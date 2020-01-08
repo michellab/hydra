@@ -3,23 +3,23 @@ import pandas as pd
 import numpy as np
 import os
 import csv
-import subprocess
 import time
 import shutil
 import glob
 import matplotlib.pyplot as plt
-from matplotlib.pyplot import figure
 import seaborn as sns
-import statistics
-import pickle
 import logging
+import statistics
+
+# Tensorflow
+import tensorflow as tf
+from tensorflow import keras
 
 # SciKit-Optimise:
 import skopt
-from skopt import gp_minimize, forest_minimize
-from skopt.space import Real, Categorical, Integer
+from skopt import gp_minimize
+from skopt.space import Categorical, Integer
 from skopt.plots import plot_convergence
-from skopt.plots import plot_objective, plot_evaluations
 from skopt.utils import use_named_args
 
 # SVM:
@@ -27,29 +27,19 @@ from sklearn.decomposition import PCA
 from sklearn import preprocessing
 from sklearn.model_selection import KFold
 from sklearn.metrics import r2_score
-from sklearn import datasets, linear_model
-from sklearn.metrics import mean_squared_error, r2_score
-
-# statistics
-from scipy.stats import shapiro, normaltest, anderson
 
 # RDKit
 from rdkit import Chem
 from rdkit.Chem import Draw
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdmolfiles, rdMolDescriptors
-from rdkit.Chem import SDMolSupplier, Descriptors, Crippen, Lipinski, Fragments
+from rdkit.Chem import SDMolSupplier
 from rdkit import DataStructs
 
 # Misc.:
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import IsolationForest
 from sklearn.metrics import mean_absolute_error
 from sklearn.decomposition import PCA
-from sklearn.svm import SVR
 from scipy import stats
-import statistics
-import pickle
 from mordred import Calculator, descriptors
 
 # global variables
@@ -68,9 +58,9 @@ SAMPL4_Guthrie_ref = 'SAMPL4_Guthrie'
 # Experimental reference column name.
 exp_ref_col = 'experimental reference (original or paper this value was taken from)'
 
-model_type = 'SVM'
-
 # set data processing configurations:
+model_type = 'DNN'
+
 PCA_threshold = 0.95  # Keeps n dimensions for x variance explained
 replicates = 30  # Number of replicates per subject model
 n_calls = 40  # Number of Bayesian optimisation loops for hyperparameter optimisation, 40 is best for convergence, > 60 scales to very expensive
@@ -88,11 +78,10 @@ freesolv_df = pd.read_csv(freesolv_loc, sep='; ', engine='python')
 def main():
 
     # initiate log file
-    logging.basicConfig(filename= output_dr + 'logfile.txt',
+    logging.basicConfig(filename= output_dr + 'training_logfile.txt',
                         filemode='a',
                         format='%(asctime)s - %(message)s',
                         level=logging.INFO)
-
     logging.info('Starting dGhydr_{}.py.'.format(model_type))
 
     # feature generation
@@ -107,7 +96,7 @@ def main():
     normalised_X = normalise_and_split_datasets(float_X)
     reduced_X = reduce_features(normalised_X, PCA_threshold)
     print('Feature generation successful.')
-    logging.info('Finished Generating features.')
+    logging.info('Finished generating filters.')
 
     # label generation
     print('––––––––––––––––––––––––––––––––––––––––––––––––')
@@ -115,6 +104,7 @@ def main():
     logging.info('Generating labels...')
     true_y = get_labels()
     print('Label geneartion successful.')
+    print('Finished generating lables.')
     logging.info('Finished generating labels.')
 
     # complete datasets ready for training
@@ -127,7 +117,7 @@ def main():
     # training
     print('––––––––––––––––––––––––––––––––––––––––––––––––')
     print('Training...')
-    logging.info("Started training...")
+    logging.info('Training started...')
     kfolds = split_dataset(train_df, n_splits, random_state)
     cumulative_MAE_df = run_regressor(kfolds)
     plot_convergence(cumulative_MAE_df, 40)
@@ -137,7 +127,7 @@ def main():
     # testing
     print('––––––––––––––––––––––––––––––––––––––––––––––––')
     print('Testing...')
-    logging.info('Started testing....')
+    logging.info('Testing started...')
     predicted_offset, predicted_offset_mae = predict_offset(test_df)
     corrected_hydr, corrected_hydr_mae, mobley_hydr_mae = correct_hydration(predicted_offset)
     print('Finished external testing.')
@@ -170,10 +160,6 @@ def main():
     print('Finished plotting figures.')
 
     logging.info('Finished dGhydr_{}.py.'.format(model_type))
-
-    ####################### set two main report colour themes and one extra #######################
-
-    ####################### FG counter to be added to end of plot_fingerprint_similarity #######################
 
 
 def draw_structure_panel(sdf_suppl, legend, filename):
@@ -216,7 +202,7 @@ def plot_fingerprint_similarity(corrected_hydr, train_df, test_df, kfolds, mode)
     plt.figure()
     fig, axs = plt.subplots(nrows=n_splits,
                             ncols=len(target_ID),
-                            figsize=(15, 10),  # 15, 6
+                            figsize=(15, 6),
                             facecolor='w',
                             edgecolor='k',
                             sharex=True,
@@ -230,18 +216,12 @@ def plot_fingerprint_similarity(corrected_hydr, train_df, test_df, kfolds, mode)
     plt.xlabel('Fingerprint similarity')
     plt.ylabel('Density')
 
-    # statistics dictionary per ligand
-    stats = {'mean': [], 'percentile': []}
-
     # iterate through all selected external test set data
     for j, mol, MAE in zip(range(len(target_ID)), target_ID, target_MAE):
 
         # target external test set entry fingerprint generation
         target_suppl = Chem.SDMolSupplier(test_dr + str(mol) + '.sdf')
         target_fp = Chem.RDKFingerprint(target_suppl[0])
-
-        # statistics dictionary per fold
-        mol_stats = {'mean': [], 'percentile': []}
 
         # iterate through each fold for selected targeted external test set entry
         for i, fold in zip(range(n_splits), kfolds):
@@ -288,32 +268,13 @@ def plot_fingerprint_similarity(corrected_hydr, train_df, test_df, kfolds, mode)
                        bbox_to_anchor=(0.5, 0.0),
                        ncol=2)
 
-            # means
-            train_mean = statistics.mean(train_similarity)
-            valdnt_mean = statistics.mean(valdnt_similarity)
-            mol_stats['mean'].append(statistics.mean([train_mean, valdnt_mean]))
-
-            # 95th percentile
-            train_percentile = np.percentile(train_similarity, 95)
-            valdnt_percentile = np.percentile(valdnt_similarity, 95)
-            mol_stats['percentile'].append(statistics.mean([train_percentile, valdnt_percentile]))
-
-        # append averaged statistics per fold
-        stats['mean'].append(round(statistics.mean(mol_stats['mean']), 2))
-        stats['percentile'].append(round(statistics.mean(mol_stats['percentile']), 2))
-
     # add row and column labels
     for x, row in enumerate(axs):
         for y, cell in enumerate(row):
             if x == 0:
                 cell.xaxis.set_label_position('top')
-                cell.set_xlabel('{}\nMAE = {} kcal/mol'.format(target_ID[y], round(target_MAE[y], 2)),
+                cell.set_xlabel('{}\nMAE: {} kcal/mol'.format(target_ID[y], round(target_MAE[y], 2)),
                                 labelpad=10)
-            if x == len(kfolds) - 1:
-                cell.xaxis.set_label_position('bottom')
-                cell.set_xlabel(
-                    'Mean = {} kcal/mol\n95th percentile = {} kcal/mol'.format(stats['mean'][y], stats['percentile'][y]),
-                    labelpad=30)
             if y == len(target_ID) - 1:
                 cell.yaxis.set_label_position('right')
                 cell.set_ylabel('Fold {}'.format(x + 1),
@@ -432,8 +393,10 @@ def calc_mae(dataframe, model):
 
 def svr_predict(model_num, test_entry):
 
-    with open(output_dr + 'fold_' + str(model_num) + '_SVM_model.svm', 'rb') as file:
-        model = pickle.load(file)
+    model = tf.keras.models.load_model(output_dr + 'fold_' + str(model_num) + '_' + model_type + '_model.h5')
+
+    # with open(output_dr + 'fold_' + str(model_num) + '_' + model_type + '_model.' + model_type.lower(), 'rb') as file:
+    #     model = pickle.load(file)
 
     return model.predict(test_entry)
 
@@ -545,30 +508,6 @@ def plot_convergence(dataframe, n_calls):
     print('Saved ', filename)
 
 
-# https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
-    """
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
-        fill        - Optional  : bar fill character (Str)
-        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
-    """
-
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = printEnd)
-    # Print New Line on Complete
-    if iteration == total:
-        print()
-
-
 def regressor(fold, fold_num):
     """
     Perofmrs:
@@ -585,8 +524,24 @@ def regressor(fold, fold_num):
 
     logging.info('Started training fold {}...'.format(str(fold_num)))
 
+    tf.keras.backend.clear_session()
+    # tf.reset_default_graph()
+
+    # Display training progress by printing a single dot per epoch:
+    class PrintDot(keras.callbacks.Callback):
+        def on_epoch_end(self, epoch, logs):
+            if epoch % 100 == 0: print('')
+            print('.', end='')
+
     # nested list containing all models
     all_models = []
+
+    # Set early stopping variable:
+    early_stopping = keras.callbacks.EarlyStopping(
+        monitor='val_loss',
+        mode='min',
+        patience=20,
+        verbose=0)
 
     # retrieve datasets
     train_X = fold[0][0].values
@@ -597,26 +552,117 @@ def regressor(fold, fold_num):
     # validate label pandas series for statistical analysis
     validate_y_df = fold[1][1]
 
-    # Set hyperparameter ranges, append to list:
-    # skopt.space.Catagorical
-    dim_param_C = Categorical(categories=list(np.logspace(-3, 2, 6, dtype="float32")), name="param_C")
-    dim_param_gamma = Categorical(categories=list(np.logspace(-3, 2, 6, dtype="float32")), name="param_gamma")
-    dim_param_epsilon = Categorical(categories=list(np.logspace(-3, 2, 6, dtype="float32")), name="param_epsilon")
+    # Build keras DNN using global params:
+    def create_model(
+            num_dense_layers_base,
+            num_dense_nodes_base,
+            num_dense_layers_end,
+            num_dense_nodes_end,
+            activation,
+            adam_b1,
+            adam_b2,
+            adam_eps,
+            num_batch_size):
 
-    dimensions = [dim_param_C, dim_param_gamma, dim_param_epsilon]
+        model = keras.Sequential()
+
+        # Add input layer of length of the dataset columns:
+        # model.add(keras.layers.Dense(len(train_X.columns), input_shape=[len(train_X.keys())]))
+        model.add(keras.layers.Dense(len(fold[0][0].columns), input_shape=[len(fold[0][0].keys())]))
+
+        # Generate n number of hidden layers (base, i.e. first layers):
+        for i in range(num_dense_layers_base):
+            model.add(keras.layers.Dense(num_dense_nodes_base,
+                                         activation=activation
+                                         ))
+
+        # Generate n number of hidden layers (end, i.e. last layers):
+        for i in range(num_dense_layers_end):
+            model.add(keras.layers.Dense(num_dense_nodes_end,
+                                         activation=activation
+                                         ))
+
+        # Add output layer:
+        model.add(keras.layers.Dense(1, activation=keras.activations.linear))
+
+        optimizer = tf.keras.optimizers.Adam(lr=0.0001, beta_1=adam_b1, beta_2=adam_b2, epsilon=adam_eps)
+
+        model.compile(
+            loss='mae',
+            optimizer=optimizer,
+            metrics=["mae"]
+        )
+        return model
+
+    # Set hyperparameter ranges, append to list:
+    dim_num_dense_layers_base = Integer(low=1, high=2, name='num_dense_layers_base')
+    dim_num_dense_nodes_base = Categorical(categories=list(np.linspace(5, 261, 10, dtype=int)),
+                                           name='num_dense_nodes_base')
+    dim_num_dense_layers_end = Integer(low=1, high=2, name='num_dense_layers_end')
+    dim_num_dense_nodes_end = Categorical(categories=list(np.linspace(5, 261, 10, dtype=int)),
+                                          name='num_dense_nodes_end')
+
+    # dim_activation = Categorical(categories=[tf.keras.activations.relu], name='activation')
+    dim_adam_b1 = Categorical(categories=list(np.linspace(0.8, 0.99, 11)), name='adam_b1')
+    dim_adam_b2 = Categorical(categories=list(np.linspace(0.8, 0.99, 11)), name='adam_b2')
+    dim_adam_eps = Categorical(categories=list(np.linspace(0.0001, 0.5, 11)), name='adam_eps')
+    dim_num_batch_size = Categorical(categories=list(np.linspace(32, 128, 7, dtype=int)), name='num_batch_size')
+
+    dimensions = [
+        dim_num_dense_layers_base,
+        dim_num_dense_nodes_base,
+        dim_num_dense_layers_end,
+        dim_num_dense_nodes_end,
+        dim_adam_b1,
+        dim_adam_b2,
+        dim_adam_eps,
+        dim_num_batch_size]
 
     @use_named_args(dimensions=dimensions)
-    def fitness(param_C, param_gamma, param_epsilon):
-        """Create svr with """
+    def fitness(
+            num_dense_layers_base,
+            num_dense_nodes_base,
 
-        # define SVR classifier
-        regr = SVR(gamma=param_gamma, C=param_C, epsilon=param_epsilon)
-        regr.fit(train_X, train_y)
+            num_dense_layers_end,
+            num_dense_nodes_end,
+            adam_b1,
+            adam_b2,
+            adam_eps,
+            num_batch_size):
 
-        predicted_y = regr.predict(validate_X)
+        # Create the neural network with these hyper-parameters:
+        regr = create_model(
+            num_dense_layers_base=num_dense_layers_base,
+            num_dense_nodes_base=num_dense_nodes_base,
+            num_dense_layers_end=num_dense_layers_end,
+            num_dense_nodes_end=num_dense_nodes_end,
+            activation=tf.keras.activations.relu,
+            adam_b1=adam_b1,
+            adam_b2=adam_b2,
+            adam_eps=adam_eps,
+            num_batch_size=num_batch_size)
 
-        # calculate some statistics on validate set:
+        # print('Fitting model..')
+        history = regr.fit(
+            train_X, train_y,
+            epochs=1000,
+            validation_data=(validate_X, validate_y),
+            verbose=0,
+            callbacks=[
+                early_stopping,
+                # PrintDot(),			# uncomment for verbosity on epochs
+            ],
+            batch_size=121)
+
+        # calculate some statistics on test set:
+        prediction = regr.predict(validate_X)
+        predicted_y = [item[0] for item in prediction]
+
+        hist = pd.DataFrame(history.history)
+        hist['epoch'] = history.epoch
+        # MAE = hist['val_mean_absolute_error'].tail(10).mean()
         MAE = mean_absolute_error(validate_y, predicted_y)
+        # MAD_testset = validate_y.mad()
         MAD_validate = validate_y_df.mad()
 
         MAEMAD = MAE / MAD_validate
@@ -628,33 +674,35 @@ def regressor(fold, fold_num):
         slope, intercept, r_value, p_value, std_err = stats.linregress(predicted_y, valdt_y_lst)
         tau, p_value = stats.kendalltau(predicted_y, valdt_y_lst)
 
-        # For plotting test set correlations:
+        # for plotting test set correlations:
         tuples_result = list(zip(valdt_ID_lst, valdt_y_lst, predicted_y))
         # [ ..., [ID, [valdt_y], predicted_y], ... ]
         nested_lst_result = [list(elem) for elem in tuples_result]
 
-        # Append data with best performing model.
-        # Data contains the MAE/MAD score, protein target, iteration,
-        # tau, r value, the keras DNN model, the internal validation plot
-        # and the data for external validation:
-
         startpoint_MAEMAD = startpoint_BO
-
         if MAEMAD < startpoint_MAEMAD:
             startpoint_MAEMAD = MAEMAD
             # keep track of models
-            all_models.append([MAEMAD, fold_num, tau, r_value, nested_lst_result])
+            all_models.append([MAEMAD, fold_num, tau, r_value, regr, hist, nested_lst_result])
 
-            # write all model files:
-            with open(output_dr + 'fold_' + str(fold_num) + '_SVM_model.svm', 'wb') as file:
-                pickle.dump(regr, file)
+            # # write all model files:
+            # # Slightly hacky but TF's backend voids model parameters when the model is saved as a variable
+            # # in order to retain the top performing model. From these temporary model files, all but the
+            # # top-performing model will be deleted from the system at the end of this script.
+
+            # regr.save_weights(output_dr + 'fold_' + str(fold_num) + '_' + model_type + '_model.h5')
+            # with open(output_dr + 'fold_' + str(fold_num) + '_' + model_type + '_model.' + model_type.lower(), 'w') as file:
+            #     pickle.dump(regr, file)
+
+            # https://www.tensorflow.org/tutorials/keras/save_and_load
+            regr.save(output_dr + 'fold_' + str(fold_num) + '_' + model_type + '_model.h5')
 
         return MAEMAD
 
     # Bayesian Optimisation to search through hyperparameter space.
     # Prior parameters were found by manual search and preliminary optimisation loops.
     # For running just dataset 13x500 calls, optimal hyperparameters from 150 calls were used as prior.
-    default_parameters = [1.0, 1.0, 1.0]
+    default_parameters = [2, 33, 1, 90, 0.971, 0.895, 1.0000e-04, 112]
     print('——————————————————————————————————————————')
     print('Created model, optimising hyperparameters...')
 
@@ -676,10 +724,6 @@ def regressor(fold, fold_num):
 
 def run_regressor(kfolds):
 
-    # Initial progress bar
-    l = len(kfolds)
-    printProgressBar(0, l, prefix='Progress:', suffix='Complete', length=50)
-
     # initiate empty dataframe to fill with cumulative minima
     cumulative_MAEs = pd.DataFrame()
     cumulative_MAEtauR_df = pd.DataFrame()
@@ -689,10 +733,11 @@ def run_regressor(kfolds):
     fold_num = 1
     models = []
 
-    for i, fold in enumerate(kfolds):
+    for fold in kfolds:
         # run svr:
         # reset MAEMAD startpoint per replicate:
         OptimizeResult, top_model = regressor(fold, fold_num)
+        print('Fold {} copleted training.'.format(fold_num))
 
         models.append(top_model)
 
@@ -714,20 +759,17 @@ def run_regressor(kfolds):
         MAEtauR_results_per_fold.append([tau, fold_num, 'Kendalls-tau'])
         MAEtauR_results_per_fold.append([MAE, fold_num, 'MAE/MAD'])
 
-        # # write update to log file:
+        # write update to log file:
         # with open(output_dr + 'logfile.txt', 'a') as file:
         #     writer = csv.writer(file, delimiter='\t')
         #     writer.writerow(['Finished fold', fold_num, 'at', str(time.ctime())])
 
         fold_num += 1
 
-        # Update Progress Bar
-        printProgressBar(i + 1, l, prefix='Progress:', suffix='Complete', length=50)
-
     print('––––––––––––––––––––––––––––––––––––––––––––––––')
     print('Finished training')
 
-    # models: [MAEMAD, fold_num, tau, r_value, nested_lst_result]
+    # models: [MAEMAD, fold_num, tau, r_value, model, hist, nested_lst_result]
     # nested_lst_results: [ ..., [ID, [valdt_y], predicted_y], ... ]
 
     # make ensemble of best models; pick n replicates' top performing models:
@@ -738,7 +780,7 @@ def run_regressor(kfolds):
     for model in all_models:
 
         internal_fold_num = model[1]
-        internal_validation = model[4]
+        internal_validation = model[6]
 
         # For each model, write internal validation to file
         with open(output_dr + 'fold_' + str(internal_fold_num) + '_internal_validation.csv', 'w') as file:
@@ -751,7 +793,7 @@ def run_regressor(kfolds):
     cumulative_MAEtauR_df = pd.concat([cumulative_MAEtauR_df, MAEtauR_df])
 
     # Save to CSV
-    cumulative_MAEtauR_df_save_loc = output_dr + 'dGoffset_SVR_MAEtauR_outputs.csv'
+    cumulative_MAEtauR_df_save_loc = output_dr + 'dGoffset_' + model_type + '_MAEtauR_outputs.csv'
 
     if os.path.exists(cumulative_MAEtauR_df_save_loc):
         os.remove(cumulative_MAEtauR_df_save_loc)
@@ -763,7 +805,7 @@ def run_regressor(kfolds):
     print('Completed writing cumulative MAE, tau and R to CSV.')
 
     # Save to CSV
-    cumulative_MAE_save_loc = output_dr + 'dGoffset_SVR_BO_MAE.csv'
+    cumulative_MAE_save_loc = output_dr + 'dGoffset_' + model_type +  '_BO_MAE.csv'
 
     if os.path.exists(cumulative_MAE_save_loc):
         os.remove(cumulative_MAE_save_loc)
@@ -1164,7 +1206,6 @@ if __name__ == '__main__':
         os.mkdir(output_dr)
 
     main()
-
     print('––––––––––––––––––––––––––––––––––––––––––––––––')
     print('––––––––––––––––––––––––––––––––––––––––––––––––')
-    print('Script finished on {}.'.format(time.ctime()))
+    print('Script finished.')
