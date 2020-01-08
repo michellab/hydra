@@ -35,7 +35,7 @@ def main():
     # Datasets for relative predictions.
 
     # # uncomment below for testing purposes
-    train_df = train_df.head(100)
+    # train_df = train_df.head(100)
 
     dtrain_df = calc_relative_dataframe(train_df)
     save_csv(dtrain_df, datasets_dr + 'dtrain_data.csv')
