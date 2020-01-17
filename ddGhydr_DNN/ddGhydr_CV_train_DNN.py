@@ -13,11 +13,7 @@ from scipy import stats
 # Tensorflow:
 import tensorflow as tf
 from tensorflow import keras
-os.environ["CUDA_VISIBLE_DEVICES"]="0, 1"	# current workstation contains 4 GPUs; exclude 1st
-# https://stackoverflow.com/questions/55081911/tensorflow-2-0-0-alpha0-tf-logging-set-verbosity
-# logging.getLogger("tensorflow").setLevel(logging.ERROR)
-# https://stackoverflow.com/questions/35869137/avoid-tensorflow-print-on-standard-error
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # 3 = INFO, WARNING, and ERROR messages are not printed
+os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 3"  # current workstation contains 4 GPUs; exclude 1st
 
 # Sklearn
 from skopt import gp_minimize
@@ -60,7 +56,8 @@ def main():
     logging.info('Starting dGhydr_training_{}.py.'.format(model_type))
 
     # Load in dataset.
-    train_df = pd.read_csv(datasets_dr + 'train_data.csv', index_col='Unnamed: 0')
+    train_df = pd.read_csv(datasets_dr + 'dtrain_data.csv', index_col='Unnamed: 0')
+    # train_df = pd.read_hdf(datasets_dr + 'dtrain_data.h5', key='relative')
 
     # training
     print('––––––––––––––––––––––––––––––––––––––––––––––––')
@@ -172,7 +169,7 @@ def regressor(fold, fold_num):
     dim_adam_b1 = Categorical(categories=list(np.linspace(0.8, 0.99, 11)), name='adam_b1')
     dim_adam_b2 = Categorical(categories=list(np.linspace(0.8, 0.99, 11)), name='adam_b2')
     dim_adam_eps = Categorical(categories=list(np.linspace(0.0001, 0.5, 11)), name='adam_eps')
-    dim_num_batch_size = Categorical(categories=list(np.linspace(32, 128, 7, dtype=int)), name='num_batch_size')
+    dim_num_batch_size = Categorical(categories=list(np.linspace(16, 30, 8, dtype=int)), name='num_batch_size')
 
     dimensions = [
         dim_num_dense_layers_base,
@@ -211,14 +208,14 @@ def regressor(fold, fold_num):
         # print('Fitting model..')
         history = regr.fit(
             train_X, train_y,
-            epochs=1000,
+            epochs=300,
             validation_data=(validate_X, validate_y),
-            verbose=0,
+            verbose=1,
             callbacks=[
                 early_stopping,
                 # PrintDot(),			# uncomment for verbosity on epochs
             ],
-            batch_size=121)
+            batch_size=30)
 
         # calculate some statistics on test set:
         prediction = regr.predict(validate_X)
@@ -262,6 +259,7 @@ def regressor(fold, fold_num):
 
             # https://www.tensorflow.org/tutorials/keras/save_and_load
             regr.save(output_dr + 'fold_' + str(fold_num) + '_' + model_type + '_model.h5')
+
 
         return MAEMAD
 
@@ -331,6 +329,7 @@ def run_regressor(kfolds):
         #     writer.writerow(['Finished fold', fold_num, 'at', str(time.ctime())])
 
         fold_num += 1
+        break
 
     print('––––––––––––––––––––––––––––––––––––––––––––––––')
     print('Finished training')
