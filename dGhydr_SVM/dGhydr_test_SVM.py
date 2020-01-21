@@ -88,6 +88,31 @@ def main():
     logging.info('Finished dGhydr_{}.py.'.format(model_type))
 
 
+def new_plot():
+
+    corrections = [correction for correction in df["Correction"].values]
+    fep_values = [value for value in df["ddG (FEP) (kcal/ mol)"].values]
+    exp_values = [value for value in df["ddG (EXP) (kcal/ mol)"].values]
+    hybrid_values = [fep - corr for fep, corr in zip(fep_values, corrections)]
+    positive_bound = max(list(fep_values + hybrid_values + exp_values))
+    negative_bound = min(list(fep_values + hybrid_values + exp_values))
+    plt.xlim(negative_bound - 0.1, positive_bound + 0.1)
+    plt.ylim(negative_bound - 0.1, positive_bound + 0.1)
+    for correction, fep, exp in zip(corrections, fep_values, exp_values):
+        fep_corrected = fep - correction
+        fep_offset = exp - fep
+        fep_corrected_offset = exp - fep_corrected
+        if abs(fep_corrected_offset) <= abs(fep_offset):
+            line_color = "green"
+        else:
+            line_color = "red"
+        if abs(correction) >= 0.1:
+            plt.annotate("", xytext=(fep, exp), xy=(fep_corrected, exp),
+                         arrowprops=dict(arrowstyle="->", color=line_color)
+                         )
+    plt.show()
+
+
 def draw_structure_panel(sdf_suppl, legend, filename):
     """Draw RDKit.Draw in panel format.
 
@@ -412,19 +437,6 @@ def predict_offset(test_set):
                     'Predicted dGoffset (kcal/mol)': model_rst,
                     'Absolute error (kcal/mol)': [float(abs(x-y)) for x, y in zip(test_y, model_rst)]}
 
-        # print('test_id')
-        # print(test_id)
-        # print(len(test_id))
-        # print(len([model for i in range(41)]))
-        # print(len(test_y))
-        # print(len(model_rst))
-        # print(len([float(abs(x-y)) for x, y in zip(test_y, model_rst)]))
-        #
-        # print('\ntest_rst\n')
-        # print(test_rst)
-        # print('\rst_dict_df\n')
-        # print(pd.DataFrame(rst_dict))
-
         test_rst = pd.concat([test_rst, pd.DataFrame(rst_dict)])
 
     # calculate MAE values
@@ -433,8 +445,8 @@ def predict_offset(test_set):
     for model, model_MAE in enumerate(MAE_lst): print('Model {} MAE: {} kcal/mol'.format(model + 1, round(model_MAE, 2)))
     print('\nAverage MAE: {} kcal/mol'.format(round(statistics.mean(MAE_lst), 2)))
 
-    # round whole results dataframe to two decimal places
-    test_rst = test_rst.round(2)
+    # # round whole results dataframe to two decimal places
+    # test_rst = test_rst.round(2)
 
     # average predicted offset values
     prdt_offsets = [test_rst.loc[test_rst['Model number'] == model, 'Predicted dGoffset (kcal/mol)'].tolist()
@@ -443,14 +455,15 @@ def predict_offset(test_set):
     avg_offsets = [statistics.mean(offset_set) for offset_set in prdt_offsets]
 
     # write results to df
-    avg_rst = {}
-
-    avg_rst['ID'] = test_id
-    avg_rst['Experimental dGoffset (kcal/mol)'] = test_y
-    avg_rst['Averaged predicted dGoffset (kcal/mol)'] = avg_offsets
-    avg_rst['Absolute error (kcal/mol)'] = abs(test_y - avg_offsets)
+    avg_rst = {'ID': test_id,
+               'Experimental dGoffset (kcal/mol)': test_y,
+               'Averaged predicted dGoffset (kcal/mol)': avg_offsets,
+               'Absolute error (kcal/mol)': abs(test_y - avg_offsets)}
 
     avg_rst_df = pd.DataFrame(avg_rst)
+
+    print('\ndGoffset df\n')
+    print(avg_rst_df)
 
     # MAE
     print('MAE between experimental and averaged predicted dGoffsets:')

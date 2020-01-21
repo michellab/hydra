@@ -67,7 +67,7 @@ def create_relative_train_test(dataframe, set_type):
         for id2, row in dataframe.iterrows():
             df = pd.DataFrame([col - row], index=[str(id1) + '~' + str(id2)])
             if not df.iloc[0, 0] == 0:
-                hdf.append(key='relative', value=df, format='table')
+                hdf.append(key='relative', value=df, format='table', index=False)
 
     hdf.close()
 
@@ -86,7 +86,7 @@ def create_absolute_train_test(features, labels, set_type):
 
         # write row to HDF5 file
         row = pd.concat([pd.DataFrame([X]), pd.DataFrame([y])], axis=1)
-        hdf.append(key='absolute', value=row, format='table')
+        hdf.append(key='absolute', value=row, format='table', index=False)
 
         # copy SDF files
         sdf = str(id1) + '.sdf'
