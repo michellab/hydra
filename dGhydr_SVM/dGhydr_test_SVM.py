@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import logging
 import pickle
+import scipy
 
 # Statistics:
 import statistics
@@ -267,6 +268,7 @@ def correct_hydration(predicted_offset):
     # corrected calculated dGhydr propogated absolute error
     # corr_AE = (err1**2 + err2**2)**0.5
     corr_AE = [abs(exp - calc) for exp, calc in zip(test_exp, corr_calc)]
+    # corr_AE = [abs(calc - exp) for exp, calc in zip(test_exp, corr_calc)]
 
     # create df
     corr_dict = {'ID': predicted_offset['ID'].tolist(),
@@ -314,7 +316,8 @@ def plot_scatter(dataframe, x_info, y_info, title, MAE):
     plt.title(title)
 
     # R-squared
-    r2 = r2_score(x, y)
+    # r2 = r2_score(x, y)
+    r2 = scipy.stats.pearsonr(x, y)[0]**2
 
     # annotate with r-squared and MAE
     string = 'R-squared = {}\nMAE = {}'.format(round(r2, 4), round(MAE, 4))

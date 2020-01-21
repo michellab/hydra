@@ -169,7 +169,10 @@ def regressor(fold, fold_num):
     dim_adam_b1 = Categorical(categories=list(np.linspace(0.8, 0.99, 11)), name='adam_b1')
     dim_adam_b2 = Categorical(categories=list(np.linspace(0.8, 0.99, 11)), name='adam_b2')
     dim_adam_eps = Categorical(categories=list(np.linspace(0.0001, 0.5, 11)), name='adam_eps')
-    dim_num_batch_size = Categorical(categories=list(np.linspace(16, 30, 8, dtype=int)), name='num_batch_size')
+    # original batch size causing error https://stackoverflow.com/questions/54004437/not-all-points-are-within-the-bounds-of-the-space-error-in-scikit-optimize
+    # dim_num_batch_size = Categorical(categories=list(np.linspace(16, 30, 8, dtype=int)), name='num_batch_size')
+    # dim_num_batch_size = Categorical(categories=list(np.linspace(16, 30, 8, dtype=int)), name='num_batch_size')
+    dim_num_batch_size = Categorical(categories=list(np.linspace(16, 33, 8, dtype=int)), name='num_batch_size')
 
     dimensions = [
         dim_num_dense_layers_base,
@@ -266,7 +269,10 @@ def regressor(fold, fold_num):
     # Bayesian Optimisation to search through hyperparameter space.
     # Prior parameters were found by manual search and preliminary optimisation loops.
     # For running just dataset 13x500 calls, optimal hyperparameters from 150 calls were used as prior.
+
+    # error https://stackoverflow.com/questions/54004437/not-all-points-are-within-the-bounds-of-the-space-error-in-scikit-optimize
     default_parameters = [2, 33, 1, 90, 0.971, 0.895, 1.0000e-04, 112]
+    # default_parameters = [2, 30, 1, 90, 0.971, 0.895, 1.0000e-04, 112]
     print('——————————————————————————————————————————')
     print('Created model, optimising hyperparameters...')
 

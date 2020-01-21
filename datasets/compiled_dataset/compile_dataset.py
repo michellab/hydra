@@ -110,11 +110,6 @@ def get_full_dataset(feature_df, label_df):
     print('Generating full dataset...')
     full_dataset = pd.concat([feature_df, label_df], axis=1, sort=False)
 
-    print('feature_df')
-    print(feature_df)
-    print('label_df')
-    print(label_df)
-
     # Save to CSV.
     save_loc = path + 'full_dataset.csv'
     save_csv(full_dataset, save_loc)
