@@ -74,43 +74,38 @@ def main():
 def regressor(fold, fold_num):
     """
     Perofmrs:
-    1. Unpack fold into training, validating x and Y
-    2. Define SVR starting hyperparameters
-    3. Setup SVR classifier
-    4. Determine statistics for validating-y against SVR-predicted-y
-    5. Pickle clasifier
 
-    Returns:
-    1. Skopt object
-    2. Best performing model
     """
 
     logging.info('Started training fold {}...'.format(str(fold_num)))
 
+    # Destroys the current TF graph and creates a new one.
     tf.keras.backend.clear_session()
+    # Clears the default graph stack and resets the global default graph.
     tf.compat.v1.reset_default_graph()
 
-    # Display training progress by printing a single dot per epoch:
-    class PrintDot(keras.callbacks.Callback):
-        def on_epoch_end(self, epoch, logs):
-            if epoch % 100 == 0: print('')
-            print('.', end='')
-
-    # nested list containing all models
+    # empty list for all models
     all_models = []
 
-    # Set early stopping variable:
+    # Set early stopping variable to prevent overfitting
     early_stopping = keras.callbacks.EarlyStopping(
-        monitor='val_loss',
-        mode='min',
-        patience=20,
+        monitor='val_loss',  # monitor validation loss
+        mode='min',  # monitoring loss
+        patience=20,  # large patience for small batch size
         verbose=0)
 
-    # retrieve datasets
-    train_X = fold[0][0].values
-    validate_X = fold[0][1].values
-    train_y = fold[1][0].values
-    validate_y = fold[1][1].values
+    # retrieve datasets using tf.data.Dataset due to large dataset size
+    # https://www.tensorflow.org/tutorials/load_data/pandas_dataframe
+    train_X = tf.data.Dataset.from_tensor_slices(fold[0][0].values)
+    validate_X = tf.data.Dataset.from_tensor_slices(fold[0][1].values)
+    train_y = tf.data.Dataset.from_tensor_slices(fold[1][0].values)
+    validate_y = tf.data.Dataset.from_tensor_slices(fold[1][1].values)
+
+    # # retrieve datasets
+    # train_X = fold[0][0].values
+    # validate_X = fold[0][1].values
+    # train_y = fold[1][0].values
+    # validate_y = fold[1][1].values
 
     # validate label pandas series for statistical analysis
     validate_y_df = fold[1][1]
@@ -127,6 +122,7 @@ def regressor(fold, fold_num):
             adam_eps,
             num_batch_size):
 
+        # linear stack of layers
         model = keras.Sequential()
 
         # Add input layer of length of the dataset columns:
@@ -171,8 +167,8 @@ def regressor(fold, fold_num):
     dim_adam_eps = Categorical(categories=list(np.linspace(0.0001, 0.5, 11)), name='adam_eps')
     # original batch size causing error https://stackoverflow.com/questions/54004437/not-all-points-are-within-the-bounds-of-the-space-error-in-scikit-optimize
     # dim_num_batch_size = Categorical(categories=list(np.linspace(16, 30, 8, dtype=int)), name='num_batch_size')
-    # dim_num_batch_size = Categorical(categories=list(np.linspace(16, 30, 8, dtype=int)), name='num_batch_size')
-    dim_num_batch_size = Categorical(categories=list(np.linspace(16, 33, 8, dtype=int)), name='num_batch_size')
+    dim_num_batch_size = Categorical(categories=list(np.linspace(16, 30, 8, dtype=int)), name='num_batch_size')
+    # dim_num_batch_size = Categorical(categories=list(np.linspace(16, 33, 8, dtype=int)), name='num_batch_size')
 
     dimensions = [
         dim_num_dense_layers_base,
@@ -216,7 +212,6 @@ def regressor(fold, fold_num):
             verbose=1,
             callbacks=[
                 early_stopping,
-                # PrintDot(),			# uncomment for verbosity on epochs
             ],
             batch_size=30)
 
@@ -271,8 +266,8 @@ def regressor(fold, fold_num):
     # For running just dataset 13x500 calls, optimal hyperparameters from 150 calls were used as prior.
 
     # error https://stackoverflow.com/questions/54004437/not-all-points-are-within-the-bounds-of-the-space-error-in-scikit-optimize
-    default_parameters = [2, 33, 1, 90, 0.971, 0.895, 1.0000e-04, 112]
-    # default_parameters = [2, 30, 1, 90, 0.971, 0.895, 1.0000e-04, 112]
+    # default_parameters = [2, 33, 1, 90, 0.971, 0.895, 1.0000e-04, 112]
+    default_parameters = [2, 30, 1, 90, 0.971, 0.895, 1.0000e-04, 112]
     print('——————————————————————————————————————————')
     print('Created model, optimising hyperparameters...')
 
