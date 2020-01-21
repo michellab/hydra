@@ -1,67 +1,33 @@
 # General:
 import pandas as pd
 import numpy as np
-import os
-import csv
-import subprocess
 import time
-import shutil
-import glob
 import matplotlib.pyplot as plt
-from matplotlib.pyplot import figure
 import seaborn as sns
-import statistics
-import pickle
 import logging
-import json
 
 # Tensorflow
 import tensorflow as tf
-from tensorflow import keras
-from tensorflow.python.keras import backend as K
-
-# SciKit-Optimise:
-import skopt
-from skopt import gp_minimize, forest_minimize
-from skopt.space import Real, Categorical, Integer
-from skopt.plots import plot_convergence
-from skopt.plots import plot_objective, plot_evaluations
-from skopt.utils import use_named_args
-
-# SVM:
-from sklearn.decomposition import PCA
-from sklearn import preprocessing
-from sklearn.model_selection import KFold
 from sklearn.metrics import r2_score
-from sklearn import datasets, linear_model
-from sklearn.metrics import mean_squared_error, r2_score
 
 # RDKit
 from rdkit import Chem
 from rdkit.Chem import Draw
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdmolfiles, rdMolDescriptors
-from rdkit.Chem import SDMolSupplier, Descriptors, Crippen, Lipinski, Fragments
+from rdkit.Chem import SDMolSupplier
 from rdkit import DataStructs
 
 # Misc.:
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import IsolationForest
-from sklearn.metrics import mean_absolute_error
-from sklearn.decomposition import PCA
-from sklearn.svm import SVR
-from scipy import stats
 import statistics
 import pickle
-from mordred import Calculator, descriptors
 
 # global variables
 path = './'
 datasets_dr = '../datasets/'
 SDF_dr = datasets_dr + 'sdffiles/'
 freesolv_loc = datasets_dr + 'freesolv_database.txt'
-train_dr = path + 'train_dr/'
-test_dr = path + 'test_dr/'
+train_dr = datasets_dr + 'train_dr/'
+test_dr = datasets_dr + 'test_dr/'
 output_dr = path + 'output/'
 figures_dr = path + 'figures/'
 
@@ -99,8 +65,8 @@ def main():
     logging.info('Starting dGhydr_testing_{}.py.'.format(model_type))
 
     # load DataFrames from training script
-    train_df = pd.read_csv(path + 'train_data.csv', index_col='Unnamed: 0')
-    test_df = pd.read_csv(path + 'test_data.csv', index_col='Unnamed: 0')
+    train_df = pd.read_csv(datasets_dr + 'train_data.csv', index_col='Unnamed: 0')
+    test_df = pd.read_csv(datasets_dr + 'test_data.csv', index_col='Unnamed: 0')
     cumulative_MAE_df = pd.read_csv(output_dr + 'dGoffset_' + model_type +  '_BO_MAE.csv', index_col='Unnamed: 0')
 
     # load in kfolds nested list from training
@@ -381,7 +347,7 @@ def plot_convergence(dataframe, n_calls):
                             label='Standard deviation')
 
     plt.xlabel('Number of calls n')
-    plt.ylabel('MAE after n calls')
+    plt.ylabel('MAE/MAD after n calls')
 
     plt.legend()
 
@@ -401,8 +367,8 @@ def correct_hydration(predicted_offset):
     # calculated dGhydr
     test_calc = test_fs_df.iloc[:, 5].tolist()
 
-    # calculated dGhydr uncertainty
-    test_calc_err = test_fs_df.iloc[:, 6].tolist()
+    # # calculated dGhydr uncertainty
+    # test_calc_err = test_fs_df.iloc[:, 6].tolist()
 
     # corrected calculated Ghydr using predicted dGoffsets
     avg_offsets = predicted_offset['Averaged predicted dGoffset (kcal/mol)']
@@ -413,7 +379,8 @@ def correct_hydration(predicted_offset):
 
     # corrected calculated dGhydr propogated absolute error
     # corr_AE = (err1**2 + err2**2)**0.5
-    corr_AE = [abs(exp - calc) for exp, calc in zip(test_exp, corr_calc)]
+    # corr_AE = [abs(exp - calc) for exp, calc in zip(test_exp, corr_calc)]
+    corr_AE = [abs(calc - exp) for exp, calc in zip(test_exp, corr_calc)]
 
     # create df
     corr_dict = {'ID': predicted_offset['ID'].tolist(),
