@@ -197,7 +197,7 @@ def train_model(train_set):
         global best_mae
 
         # If the classification accuracy of the saved model is improved ...
-        if mae > best_mae:
+        if mae < best_mae:
             # save the new model to harddisk.
             model.save(output_dr + 'ddGhydr_' + model_type + '_model.h5')
 
