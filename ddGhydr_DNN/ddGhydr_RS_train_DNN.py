@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import os
 import sys
+import csv
 import time
 import shutil
 import logging
@@ -15,7 +16,7 @@ from tensorflow.python.keras import backend as K
 os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 3"  # current workstation contains 4 GPUs; exclude 1st
 
 # Sklearn
-from skopt import gp_minimize
+from skopt import gp_minimize, dump
 from skopt.space import Categorical, Integer
 from skopt.utils import use_named_args
 
@@ -35,13 +36,14 @@ model_type = 'DNN'
 offset_col_name = 'dGoffset (kcal/mol)'
 
 # DNN global variables
-n_calls = 40  # Number of Bayesian optimisation loops for hyperparameter optimisation, 40 is best for convergence, > 60 scales to very expensive
-epochs = 300
-best_mae = 0.0
+n_calls = 20  # Number of Bayesian optimisation loops for hyperparameter optimisation, 40 is best for convergence, > 60 scales to very expensive
+epochs = 200
+best_mae = np.inf
 
 # load in data set
 dtrain_df = pd.read_hdf(datasets_dr + 'dtrain_data.h5', key='relative')
 num_input_nodes = len(dtrain_df.columns) - 1
+
 
 def main():
 
@@ -50,7 +52,8 @@ def main():
                     filemode='a',
                     format='%(asctime)s - %(message)s',
                     level=logging.INFO)
-    logging.info('Starting ddGhydr_training_{}.py.'.format(model_type))
+    logging.info('Starting {}.'.format(__file__))
+    logging.info('\n\nDNN parameters:\n\nn_calls = {}  # gp_minimize\nepochs = {}\n'.format(n_calls, epochs))
 
     train_model(dtrain_df)
 
@@ -122,14 +125,10 @@ def train_model(train_set):
     train_X, validate_X, train_y, validate_y = train_test_split(
         X, y, test_size=0.2, random_state=42)
 
-    print('Shape of:')
-    print('1. train_X:', train_X.shape)
-    print('2. train_y:', train_y.shape)
-    print('3. validate_X:', validate_X.shape)
-    print('4. validate_y:', validate_y.shape)
-
-    # validate label pandas series for statistical analysis
-    validate_y_df = pd.DataFrame(validate_y)
+    # init recording statistics
+    with open(output_dr + 'DNN_statistics.csv', 'w') as file:
+        writer = csv.writer(file)
+        writer.writerow(['MAE (kcal/mol)', 'parameters'])
 
     # define hyper-perameters
     # layers
@@ -157,7 +156,6 @@ def train_model(train_set):
         verbose=0)  # do not output to terminal
 
     # start hyper-perameter optimisation
-    mae_lst = []
     @use_named_args(dimensions=dimensions)
     def fitness(num_dense_layers_base, num_dense_nodes_base,
                 num_dense_layers_end, num_dense_nodes_end,
@@ -171,37 +169,31 @@ def train_model(train_set):
                              activation=tf.keras.activations.relu,
                              adam_b1=adam_b1, adam_b2=adam_b2, adam_eps=adam_eps)
 
-        history = model.fit(
-            train_X, train_y,  # training data
-            epochs=epochs,  # number of forward and backward runs
-            validation_data=(validate_X, validate_y),  # validation data
-            verbose=1,  # input progress to terminal
-            callbacks=[early_stopping],  # prevent over fitting
-            batch_size=30  # increase efficiency
-        )
+        history = model.fit(train_X, train_y, # training data
+                            epochs=epochs,  # number of forward and backward runs
+                            validation_data=(validate_X, validate_y),  # validation data
+                            verbose=1,  # input progress to terminal
+                            callbacks=[early_stopping],  # prevent over fitting
+                            batch_size=30)  # increase efficiency
 
+        # update statistics
         mae = history.history['val_mae'][-1]
+        parameters = [num_dense_layers_base, num_dense_nodes_base,
+                      num_dense_layers_end, num_dense_nodes_end,
+                      adam_b1, adam_b2, adam_eps]
+        with open(output_dr + 'DNN_statistics.csv', 'a') as file:
+            writer = csv.writer(file)
+            writer.writerow([mae, parameters])
+
         print('\nMAE = {} kcal/mol\n'.format(mae))
-        print('Parameters: {}'.format(
-            [num_dense_layers_base, num_dense_nodes_base,
-             num_dense_layers_end, num_dense_nodes_end,
-             adam_b1, adam_b2, adam_eps]
-        ))
-        logging.info('Parameters: {}'.format(
-            [num_dense_layers_base, num_dense_nodes_base,
-             num_dense_layers_end, num_dense_nodes_end,
-             adam_b1, adam_b2, adam_eps]
-        ))
-        logging.info('MAE = {} kcal/mol'.format(mae))
+        print('Parameters: {}\n'.format(parameters))
 
+        # If the regressor accuracy of the saved model is improved ...
         global best_mae
-
-        # If the classification accuracy of the saved model is improved ...
         if mae < best_mae:
             # save the new model to harddisk.
             model.save(output_dr + 'ddGhydr_' + model_type + '_model.h5')
-
-            # Update the classification accuracy.
+            # Update the regressor accuracy.
             best_mae = mae
 
         # Delete the Keras model with these hyper-parameters from memory.
@@ -212,14 +204,9 @@ def train_model(train_set):
         # a model with a different set of hyper-parameters.
         K.clear_session()
 
-        # Destroys the current TF graph and creates a new one.
-        tf.keras.backend.clear_session()
-        # Clears the default graph stack and resets the global default graph.
-        tf.compat.v1.reset_default_graph()
+        return mae
 
-        mae_lst.append(mae)
-        return -mae
-
+    # a place for optimiser to start looking
     default_parameters = [2, 261, 1, 61, 0.857, 0.933, 0.20006]
 
     search_result = gp_minimize(func=fitness,
@@ -228,25 +215,14 @@ def train_model(train_set):
                                 n_calls=n_calls,
                                 x0=default_parameters)
 
-    logging.info('Finished training with final parameters: {}.'.format(search_result.x))
+    # save skopt object and analyse in a separate script as
+    # https://github.com/scikit-optimize/scikit-optimize/blob/master/examples/bayesian-optimization.ipynb
+    # https://github.com/Hvass-Labs/TensorFlow-Tutorials/blob/master/19_Hyper-Parameters.ipynb
+    dump(search_result, output_dr + 'gp_minimize_result.pickle', store_objective=False)
+    logging.info('Saved {}gp_minimize_result.pickle.'.format(output_dr))
 
-    # Save mae to CSV
-    save_csv(dataframe=pd.DataFrame(mae_lst, columns=['MAE (kcal/mol)']),
-             pathname=output_dr + 'ddGoffset_' + model_type +  '_MAE.csv')
-
-    # return skopt object and highest scoring model for this fold:
+    logging.info('Final parameters: {}.'.format(search_result.x))
     return search_result
-
-
-def save_csv(dataframe, pathname):
-
-    if os.path.exists(pathname):
-        os.remove(pathname)
-        dataframe.to_csv(path_or_buf=pathname, index=True)
-        print('Existing file overwritten.')
-    else:
-        dataframe.to_csv(path_or_buf=pathname, index=True)
-    print('Completed writing {}.csv.'.format(pathname))
 
 
 # https://stackoverflow.com/questions/3041986/apt-command-line-interface-like-yes-no-input
