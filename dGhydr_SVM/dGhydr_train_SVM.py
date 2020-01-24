@@ -9,7 +9,7 @@ import logging
 import pickle
 
 # SciKit-Optimise:
-from skopt import gp_minimize
+from skopt import gp_minimize, dump
 from skopt.space import Categorical
 from skopt.utils import use_named_args
 
@@ -17,7 +17,6 @@ from skopt.utils import use_named_args
 from sklearn.model_selection import KFold
 from sklearn.metrics import mean_absolute_error
 from sklearn.svm import SVR
-from scipy import stats
 
 # Path variables:
 path = './'
@@ -31,7 +30,7 @@ offset_col_name = 'dGoffset (kcal/mol)'
 
 # set data processing configurations:
 n_calls = 40  # Number of Bayesian optimisation loops for hyperparameter optimisation, 40 is best for convergence, > 60 scales to very expensive
-startpoint_BO = np.inf  # Point to consider top-performing model from (MAE/MAD); 1.0 = no improvement on test-set variance
+best_mae = np.inf  # Point to consider top-performing model from (MAE/MAD); 1.0 = no improvement on test-set variance
 
 # KFold parameters:
 n_splits = 5  # Number of K-fold splits
@@ -46,21 +45,25 @@ def main():
                         format='%(asctime)s - %(message)s',
                         level=logging.INFO)
 
-    logging.info('Starting dGhydr_{}.py.'.format(model_type))
+    logging.info('Starting {}.'.format(__file__))
+    logging.info('\n\nParameters:\n\nn_calls = {}  # gp_minimize\nn_splits = {}  # Kfolds\n'.format(n_calls, n_splits))
+
 
     # Load in dataset.
-    train_df = pd.read_csv(datasets_dr + 'train_data.csv', index_col='Unnamed: 0')
+    train_df = pd.read_hdf(datasets_dr + 'train_data.h5', key='absolute')
 
     # training
     kfolds = split_dataset(train_df, n_splits, random_state)
-    run_regressor(kfolds)
+
+    for i, fold in enumerate(kfolds):
+        fold_num = i + 1
+        train_model(fold, fold_num)
 
     logging.info('Finished dGhydr_{}.py.'.format(model_type))
 
 
-def regressor(fold, fold_num):
+def train_model(fold, fold_num):
     """
-    Perofmrs:
     1. Unpack fold into training, validating x and Y
     2. Define SVR starting hyperparameters
     3. Setup SVR classifier
@@ -71,83 +74,70 @@ def regressor(fold, fold_num):
     1. Skopt object
     2. Best performing model
     """
-
     logging.info('Started training fold {}...'.format(str(fold_num)))
 
-    # nested list containing all models
-    all_models = []
-
-    # retrieve datasets
+    # retrieve data sets and convert to numpy array
     train_X = fold[0][0].values
     validate_X = fold[0][1].values
     train_y = fold[1][0].values
     validate_y = fold[1][1].values
 
-    # validate label pandas series for statistical analysis
-    validate_y_df = fold[1][1]
+    # init recording statistics
+    with open(output_dr + model_type + '_statistics.csv', 'w') as file:
+        writer = csv.writer(file)
+        # writer.writerow(['MAE (kcal/mol)', 'r2', 'parameters'])
+        writer.writerow(['MAE (kcal/mol)', 'parameters'])
 
-    # Set hyperparameter ranges, append to list:
-    # skopt.space.Catagorical
+    # set hyper-parameter ranges, append to list
     dim_param_C = Categorical(categories=list(np.logspace(-3, 2, 6, dtype="float32")), name="param_C")
     dim_param_gamma = Categorical(categories=list(np.logspace(-3, 2, 6, dtype="float32")), name="param_gamma")
     dim_param_epsilon = Categorical(categories=list(np.logspace(-3, 2, 6, dtype="float32")), name="param_epsilon")
 
     dimensions = [dim_param_C, dim_param_gamma, dim_param_epsilon]
 
+    # start optimising hyper-parameters
+    ############ add logging decorator ############
     @use_named_args(dimensions=dimensions)
     def fitness(param_C, param_gamma, param_epsilon):
-        """Create svr with """
 
-        # define SVR classifier
-        regr = SVR(gamma=param_gamma, C=param_C, epsilon=param_epsilon)
+        # create SVR instance
+        model = SVR(gamma=param_gamma, C=param_C,
+                    epsilon=param_epsilon, verbose=False)
 
-        # fit and validate model
-        regr.fit(train_X, train_y)
-        predicted_y = regr.predict(validate_X)
+        # train model on training data
+        model.fit(train_X, train_y)
 
-        # calculate some statistics on validate set:
-        MAE = mean_absolute_error(validate_y, predicted_y)
-        MAD_validate = validate_y_df.mad()
+        # validate model
+        predicted_y = model.predict(validate_X)
 
-        MAEMAD = MAE / MAD_validate
-        print('Fold {} MAE/MAD: {}.'.format(fold_num, MAEMAD))
+        # calculate some statistics on validate set
+        # note: different args orders
+        mae = mean_absolute_error(validate_y, predicted_y)
+        # r2 = model.score(predicted_y, validate_y)
 
-        valdt_ID_lst = validate_y_df.index.tolist()
-        valdt_y_lst = validate_y_df.values.tolist()
+        # update statistics
+        with open(output_dr + model_type + '_statistics.csv', 'a') as file:
+            writer = csv.writer(file)
+            # writer.writerow([mae, r2, [param_gamma, param_gamma, param_epsilon]])
+            writer.writerow([mae, [param_gamma, param_gamma, param_epsilon]])
 
-        slope, intercept, r_value, p_value, std_err = stats.linregress(predicted_y, valdt_y_lst)
-        tau, p_value = stats.kendalltau(predicted_y, valdt_y_lst)
+        # print('\nMAE = {} kcal/mol\nr2 = {}\n'.format(mae, r2))
+        print('MAE = {} kcal/mol'.format(mae))
+        print('Parameters: {}\n'.format([param_gamma, param_gamma, param_epsilon]))
 
-        # For plotting test set correlations:
-        tuples_result = list(zip(valdt_ID_lst, valdt_y_lst, predicted_y))
-        # [ ..., [ID, [valdt_y], predicted_y], ... ]
-        nested_lst_result = [list(elem) for elem in tuples_result]
-
-        # Append data with best performing model.
-        # Data contains the MAE/MAD score, protein target, iteration,
-        # tau, r value, the keras DNN model, the internal validation plot
-        # and the data for external validation:
-
-        startpoint_MAEMAD = startpoint_BO
-
-        if MAEMAD < startpoint_MAEMAD:
-            # keep track of models
-            all_models.append([MAEMAD, fold_num, tau, r_value, nested_lst_result])
-
-            # write all model files:
+        global best_mae
+        if mae < best_mae:
+            # save model
             with open(output_dr + 'fold_' + str(fold_num) + '_' + model_type + '_model.pickle', 'wb') as file:
-                pickle.dump(regr, file)
-
+                pickle.dump(model, file)
             logging.info('Model saved at ' + output_dr + 'fold_' + str(fold_num) + '_' + model_type + '_model.pickle')
 
-        return MAEMAD
+            # Update the regressor accuracy.
+            best_mae = mae
 
-    # Bayesian Optimisation to search through hyperparameter space.
-    # Prior parameters were found by manual search and preliminary optimisation loops.
-    # For running just dataset 13x500 calls, optimal hyperparameters from 150 calls were used as prior.
+        return mae
+
     default_parameters = [1.0, 1.0, 1.0]
-    print('——————————————————————————————————————————')
-    print('Created model, optimising hyperparameters...')
 
     search_result = gp_minimize(func=fitness,
                                 dimensions=dimensions,
@@ -155,92 +145,20 @@ def regressor(fold, fold_num):
                                 n_calls=n_calls,
                                 x0=default_parameters)
 
-    print('Concluded optimal hyperparameters:')
+    print('Concluded optimal hyper-parameters:')
     print('Fold {}: {}'.format(str(fold_num), search_result.x))
+
+    # save skopt object and analyse in a separate script as
+    dump(search_result, output_dr + 'fold_' + str(fold_num) + '_gp_minimize_result.pickle', store_objective=False)
+    logging.info('Saved {}fold_{}_gp_minimize_result.pickle.'.format(output_dr, fold_num))
+
     logging.info('Finished training fold {}: {}.'.format(str(fold_num), search_result.x))
-
-    print('——————————————————————————————————————————')
-
-    # return skopt object and highest scoring model for this fold:
-    return search_result, all_models[-1]
-
-
-def run_regressor(kfolds):
-
-    # Initiate empty dataframe to fill with cumulative minima.
-    cumulative_MAEs = pd.DataFrame()
-    cumulative_MAEtauR_df = pd.DataFrame()
-    MAEtauR_results_per_fold = [['Correlation Coefficient', 'Fold number', 'Correlation metric']]
-
-    fold_num = 1
-    models = []
-
-    for fold in kfolds:
-        # reset MAEMAD startpoint per replicate:
-        OptimizeResult, top_model = regressor(fold, fold_num)
-
-        models.append(top_model)
-
-        # construct, cummin and concatenate results of this fold to the other folds in the loop:
-        split_columns = {
-            'Fold': int(fold_num),
-            'MAE/MAD': OptimizeResult.func_vals}
-
-        # construct individual fold result dataframe using the dictionary method
-        fold_result_df = pd.DataFrame(split_columns).cummin()
-        cumulative_MAEs = pd.concat([cumulative_MAEs, fold_result_df])
-
-        # retrieve statistics for this replicate:
-        tau = top_model[2]
-        r_value = top_model[3]
-        MAE = top_model[0]
-
-        MAEtauR_results_per_fold.append([r_value, fold_num, 'Pearsons-r'])
-        MAEtauR_results_per_fold.append([tau, fold_num, 'Kendalls-tau'])
-        MAEtauR_results_per_fold.append([MAE, fold_num, 'MAE/MAD'])
-
-        fold_num += 1
-
-    print('––––––––––––––––––––––––––––––––––––––––––––––––')
-    print('Finished training')
-
-    # models: [MAEMAD, fold_num, tau, r_value, nested_lst_result]
-    # nested_lst_results: [ ..., [ID, [valdt_y], predicted_y], ... ]
-
-    # make ensemble of best models; pick n replicates' top performing models:
-    # explaination of key=lambda:
-    # https://stackoverflow.com/questions/8966538/syntax-behind-sortedkey-lambda
-    all_models = sorted(models, key=lambda x: x[0])
-
-    for model in all_models:
-
-        internal_fold_num = model[1]
-        internal_validation = model[4]
-
-        # For each model, write internal validation to file
-        with open(output_dr + 'fold_' + str(internal_fold_num) + '_internal_validation.csv', 'w') as file:
-            writer = csv.writer(file)
-            writer.writerow(['ID', 'Experimental dGoffset (kcal/mol)', 'Predicted dGoffset (kcal/mol)'])
-            for row in internal_validation:
-                writer.writerow(row)
-
-    MAEtauR_df = pd.DataFrame(MAEtauR_results_per_fold[1:], columns=MAEtauR_results_per_fold[0])
-    cumulative_MAEtauR_df = pd.concat([cumulative_MAEtauR_df, MAEtauR_df])
-
-    # Save to CSV
-    save_loc1 = output_dr + 'dGoffset_' + model_type + '_MAEtauR_outputs.csv'
-    save_csv(cumulative_MAEtauR_df, save_loc1)
-
-    save_loc2 = output_dr + 'dGoffset_' + model_type + '_BO_MAE.csv'
-    save_csv(cumulative_MAEs, save_loc2)
-
-    return cumulative_MAEs
+    return search_result
 
 
 def split_dataset(dataset, n_splits, random_state):
     """KFold implementation for pandas DataFrame.
     (https://stackoverflow.com/questions/45115964/separate-pandas-dataframe-using-sklearns-kfold)"""
-
     logging.info('Performing {}-fold cross-validation...'.format(n_splits))
 
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
@@ -269,17 +187,6 @@ def split_dataset(dataset, n_splits, random_state):
 
     print('Completed {}-fold cross-validation.'.format(n_splits))
     return kfolds
-
-
-def save_csv(dataframe, pathname):
-
-    if os.path.exists(pathname):
-        os.remove(pathname)
-        dataframe.to_csv(path_or_buf=pathname, index=True)
-        print('Existing file overwritten.')
-    else:
-        dataframe.to_csv(path_or_buf=pathname, index=True)
-    print('Completed writing {}.csv.'.format(pathname))
 
 
 if __name__ == '__main__':
