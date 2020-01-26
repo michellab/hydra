@@ -210,6 +210,9 @@ def train_model(fold, fold_num):
         # a model with a different set of hyper-parameters.
         K.clear_session()
 
+        # reset best MAE
+        best_mae = np.inf
+
         return mae
 
     # a place for optimiser to start looking
