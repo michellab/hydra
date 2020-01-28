@@ -13,11 +13,7 @@ from scipy import stats
 # Tensorflow:
 import tensorflow as tf
 from tensorflow import keras
-os.environ["CUDA_VISIBLE_DEVICES"]="0, 1"	# current workstation contains 4 GPUs; exclude 1st
-# https://stackoverflow.com/questions/55081911/tensorflow-2-0-0-alpha0-tf-logging-set-verbosity
-# logging.getLogger("tensorflow").setLevel(logging.ERROR)
-# https://stackoverflow.com/questions/35869137/avoid-tensorflow-print-on-standard-error
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # 3 = INFO, WARNING, and ERROR messages are not printed
+os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"	# current workstation contains 4 GPUs; exclude 1st
 
 # Sklearn
 from skopt import gp_minimize

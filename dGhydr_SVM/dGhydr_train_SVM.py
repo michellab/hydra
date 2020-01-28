@@ -85,8 +85,7 @@ def train_model(fold, fold_num):
     # init recording statistics
     with open(output_dr + model_type + '_statistics.csv', 'w') as file:
         writer = csv.writer(file)
-        # writer.writerow(['MAE (kcal/mol)', 'r2', 'parameters'])
-        writer.writerow(['MAE (kcal/mol)', 'parameters'])
+        writer.writerow(['fold', 'MAE (kcal/mol)', 'parameters'])
 
     # set hyper-parameter ranges, append to list
     dim_param_C = Categorical(categories=list(np.logspace(-3, 2, 6, dtype="float32")), name="param_C")
@@ -119,7 +118,7 @@ def train_model(fold, fold_num):
         with open(output_dr + model_type + '_statistics.csv', 'a') as file:
             writer = csv.writer(file)
             # writer.writerow([mae, r2, [param_gamma, param_gamma, param_epsilon]])
-            writer.writerow([mae, [param_gamma, param_gamma, param_epsilon]])
+            writer.writerow([fold_num, mae, [param_gamma, param_gamma, param_epsilon]])
 
         # print('\nMAE = {} kcal/mol\nr2 = {}\n'.format(mae, r2))
         print('MAE = {} kcal/mol'.format(mae))
@@ -143,7 +142,8 @@ def train_model(fold, fold_num):
                                 dimensions=dimensions,
                                 acq_func='EI',  # Expected Improvement.
                                 n_calls=n_calls,
-                                x0=default_parameters)
+                                x0=default_parameters,
+                                verbose=False)
 
     print('Concluded optimal hyper-parameters:')
     print('Fold {}: {}'.format(str(fold_num), search_result.x))

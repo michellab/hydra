@@ -58,15 +58,15 @@ freesolv_df = pd.read_csv(freesolv_loc, sep='; ', engine='python')
 def main():
 
     # initiate log file
-    logging.basicConfig(filename= output_dr + 'testing_logfile.txt',
+    logging.basicConfig(filename= output_dr + 'dGhydr_DNN_testing.log',
                         filemode='a',
                         format='%(asctime)s - %(message)s',
                         level=logging.INFO)
-    logging.info('Starting dGhydr_testing_{}.py.'.format(model_type))
+    logging.info('Starting {}.'.format(__file__))
 
     # load DataFrames from training script
-    train_df = pd.read_csv(datasets_dr + 'train_data.csv', index_col='Unnamed: 0')
-    test_df = pd.read_csv(datasets_dr + 'test_data.csv', index_col='Unnamed: 0')
+    train_df = pd.read_hdf(datasets_dr + 'train_data.h5')
+    test_df = pd.read_hdf(datasets_dr + 'test_data.h5')
     cumulative_MAE_df = pd.read_csv(output_dr + 'dGoffset_' + model_type +  '_BO_MAE.csv', index_col='Unnamed: 0')
 
     # load in kfolds nested list from training
