@@ -7,6 +7,7 @@ import time
 import shutil
 import logging
 import pickle
+import sys
 
 # SVM:
 from sklearn.svm import SVR
@@ -26,7 +27,7 @@ output_dr = path + 'output/'
 if not os.path.exists(output_dr):
     os.mkdir(output_dr)
 figures_dr = path + 'figures/'
-if not os.path.exists(output_dr):
+if not os.path.exists(figures_dr):
     os.mkdir(figures_dr)
 
 # Global variables:
@@ -50,7 +51,6 @@ def main():
                     format='%(asctime)s - %(message)s',
                     level=logging.INFO)
     logging.info('Starting {}.'.format(__file__))
-    logging.info('\n\nDNN parameters:\n\nn_calls = {}  # gp_minimize\nepochs = {}\n'.format(n_calls, epochs))
 
     train_model(dtrain_df)
 
