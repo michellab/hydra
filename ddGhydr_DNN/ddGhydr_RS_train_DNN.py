@@ -28,7 +28,7 @@ output_dr = path + 'output/'
 if not os.path.exists(output_dr):
     os.mkdir(output_dr)
 figures_dr = path + 'figures/'
-if not os.path.exists(output_dr):
+if not os.path.exists(figures_dr):
     os.mkdir(figures_dr)
 
 # Global variables:
@@ -36,7 +36,7 @@ model_type = 'DNN'
 offset_col_name = 'dGoffset (kcal/mol)'
 
 # DNN global variables
-n_calls = 20  # Number of Bayesian optimisation loops for hyperparameter optimisation, 40 is best for convergence, > 60 scales to very expensive
+n_calls = 40  # Number of Bayesian optimisation loops for hyperparameter optimisation, 40 is best for convergence, > 60 scales to very expensive
 epochs = 200
 best_mae = np.inf
 

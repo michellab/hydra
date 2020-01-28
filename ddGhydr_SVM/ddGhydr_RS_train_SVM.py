@@ -27,7 +27,7 @@ output_dr = path + 'output/'
 if not os.path.exists(output_dr):
     os.mkdir(output_dr)
 figures_dr = path + 'figures/'
-if not os.path.exists(output_dr):
+if not os.path.exists(figures_dr):
     os.mkdir(figures_dr)
 
 # Global variables:

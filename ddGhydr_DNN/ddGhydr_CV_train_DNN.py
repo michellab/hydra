@@ -30,7 +30,7 @@ output_dr = path + 'output/'
 if not os.path.exists(output_dr):
     os.mkdir(output_dr)
 figures_dr = path + 'figures/'
-if not os.path.exists(output_dr):
+if not os.path.exists(figures_dr):
     os.mkdir(figures_dr)
 
 # Global variables:
@@ -50,9 +50,9 @@ def main():
 
     # initiate log file
     logging.basicConfig(filename= output_dr + 'training_logfile.txt',
-                        filemode='a',
-                        format='%(asctime)s - %(message)s',
-                        level=logging.INFO)
+                    filemode='a',
+                    format='%(asctime)s - %(message)s',
+                    level=logging.INFO)
     logging.info('Starting dGhydr_training_{}.py.'.format(model_type))
 
     # Load in dataset.
@@ -73,7 +73,11 @@ def main():
 
 def regressor(fold, fold_num):
     """
-    Perofmrs:
+    1. Clear any previous Keras sessions.
+    2. Define early stopping.
+    3. Unpack input DataFrame.
+    4. Define create model function.
+    5. Set hyper perameter ranges.
 
     """
 
@@ -101,6 +105,9 @@ def regressor(fold, fold_num):
     train_y = tf.data.Dataset.from_tensor_slices(fold[1][0].values)
     validate_y = tf.data.Dataset.from_tensor_slices(fold[1][1].values)
 
+    # print('train_X:', train_X, 'train_y:', train_y)
+    # print('validate_X:', validate_X, 'validate_y:', validate_y)
+
     # # retrieve datasets
     # train_X = fold[0][0].values
     # validate_X = fold[0][1].values
@@ -119,38 +126,49 @@ def regressor(fold, fold_num):
             activation,
             adam_b1,
             adam_b2,
-            adam_eps,
-            num_batch_size):
+            adam_eps):
+            # num_batch_size):
 
         # linear stack of layers
         model = keras.Sequential()
 
         # Add input layer of length of the dataset columns:
         # model.add(keras.layers.Dense(len(train_X.columns), input_shape=[len(train_X.keys())]))
-        model.add(keras.layers.Dense(len(fold[0][0].columns), input_shape=[len(fold[0][0].keys())]))
+        model.add(keras.layers.Dense(
+            len(fold[0][0].columns),  # number of nodes
+            input_shape=(len(fold[0][0].columns),)  # tuple specifying data input dimensions only needed in first layer
+        ))
 
         # Generate n number of hidden layers (base, i.e. first layers):
         for i in range(num_dense_layers_base):
-            model.add(keras.layers.Dense(num_dense_nodes_base,
-                                         activation=activation
-                                         ))
+            model.add(keras.layers.Dense(
+                num_dense_nodes_base,
+                activation=activation
+            ))
 
         # Generate n number of hidden layers (end, i.e. last layers):
         for i in range(num_dense_layers_end):
-            model.add(keras.layers.Dense(num_dense_nodes_end,
-                                         activation=activation
-                                         ))
+            model.add(keras.layers.Dense(
+                num_dense_nodes_end,
+                activation=activation
+            ))
 
         # Add output layer:
         model.add(keras.layers.Dense(1, activation=keras.activations.linear))
 
-        optimizer = tf.keras.optimizers.Adam(lr=0.0001, beta_1=adam_b1, beta_2=adam_b2, epsilon=adam_eps)
+        optimizer = tf.keras.optimizers.Adam(
+            lr=0.0001,  # learning rate
+            beta_1=adam_b1,  # exponential decay rate for the first moment estimates
+            beta_2=adam_b2,  # exponential decay rate for the second-moment estimates (
+            epsilon=adam_eps  # prevent any division by zero
+        )
 
         model.compile(
-            loss='mae',
-            optimizer=optimizer,
-            metrics=["mae"]
+            loss='mae',  # loss function
+            optimizer=optimizer,  # optimisaion function defined above
+            metrics=["mae"]  # metric to be recorded
         )
+
         return model
 
     # Set hyperparameter ranges, append to list:
@@ -167,7 +185,7 @@ def regressor(fold, fold_num):
     dim_adam_eps = Categorical(categories=list(np.linspace(0.0001, 0.5, 11)), name='adam_eps')
     # original batch size causing error https://stackoverflow.com/questions/54004437/not-all-points-are-within-the-bounds-of-the-space-error-in-scikit-optimize
     # dim_num_batch_size = Categorical(categories=list(np.linspace(16, 30, 8, dtype=int)), name='num_batch_size')
-    dim_num_batch_size = Categorical(categories=list(np.linspace(16, 30, 8, dtype=int)), name='num_batch_size')
+    # dim_num_batch_size = Categorical(categories=list(np.linspace(16, 30, 8, dtype=int)), name='num_batch_size')
     # dim_num_batch_size = Categorical(categories=list(np.linspace(16, 33, 8, dtype=int)), name='num_batch_size')
 
     dimensions = [
@@ -177,8 +195,8 @@ def regressor(fold, fold_num):
         dim_num_dense_nodes_end,
         dim_adam_b1,
         dim_adam_b2,
-        dim_adam_eps,
-        dim_num_batch_size]
+        dim_adam_eps]
+        # dim_num_batch_size]
 
     @use_named_args(dimensions=dimensions)
     def fitness(
@@ -189,8 +207,8 @@ def regressor(fold, fold_num):
             num_dense_nodes_end,
             adam_b1,
             adam_b2,
-            adam_eps,
-            num_batch_size):
+            adam_eps):
+            # num_batch_size):
 
         # Create the neural network with these hyper-parameters:
         regr = create_model(
@@ -301,7 +319,8 @@ def run_regressor(kfolds):
     for fold in kfolds:
         # run svr:
         # reset MAEMAD startpoint per replicate:
-        OptimizeResult, top_model = regressor(fold, fold_num)
+        regressor(fold, fold_num)
+        # OptimizeResult, top_model = regressor(fold, fold_num)
         print('Fold {} copleted training.'.format(fold_num))
 
         models.append(top_model)

@@ -40,62 +40,63 @@ def main():
     train_full, test_full = split_train_test(full_dataset)
 
     # absolute data sets
-    create_absolute_train_test(train_X, train_y, 'train')
-    create_absolute_train_test(test_X, test_y, 'test')
+    create_absolute_train_test(train_X, train_y)
 
     # # relative data sets
-    create_relative_train_test(train_full, 'train')
-    create_relative_train_test(test_full, 'test')
+    create_relative_train_test(train_full)
 
 
-def create_relative_train_test(dataframe, set_type):
+def create_relative_train_test(dataframe):
     """col - row, where col and row notation is taken from matrices nomenclature.
     Index values must be Mobley IDs.
     set_type: 'train' or 'test'
     matrix diagonal is not omitted
     note: label column will still be called 'dGoffset (kcal/mol)' and not 'ddGoffset (kcal/mol)'"""
 
-    # setup HDF5 file
-    hdf = pd.HDFStore(datasets_dr + 'd' + set_type + '_data.h5')
-    hdf.put('relative', pd.DataFrame(), format='table', data_columns=True)
+    set_type = ['train', 'test']
+    for set in set_type:
+        # setup HDF5 file
+        hdf = pd.HDFStore(datasets_dr + 'd' + set + '_data.h5')
+        hdf.put('relative', pd.DataFrame(), format='table', data_columns=True)
 
-    for id1, col in tqdm(dataframe.iterrows(),
-                         total=dataframe.shape[0],
-                         desc='Writing d{}_data.h5'.format(set_type),
-                         unit_scale=True, leave=True, ncols=100):
+        for id1, col in tqdm(dataframe.iterrows(),
+                             total=dataframe.shape[0],
+                             desc='Writing d{}_data.h5'.format(set),
+                             unit_scale=True, leave=True, ncols=100):
 
-        for id2, row in dataframe.iterrows():
-            df = pd.DataFrame([col - row], index=[str(id1) + '~' + str(id2)])
-            if not df.iloc[0, 0] == 0:
-                hdf.append(key='relative', value=df, format='table', index=False)
+            for id2, row in dataframe.iterrows():
+                df = pd.DataFrame([col - row], index=[str(id1) + '~' + str(id2)])
+                if not df.iloc[0, 0] == 0:
+                    hdf.append(key='relative', value=df, format='table', index=False)
 
-    hdf.close()
+        hdf.close()
 
 
-def create_absolute_train_test(features, labels, set_type):
-    """set_type: 'train' or 'test'"""
+def create_absolute_train_test(features, labels):
 
-    # setup HDF5 file
-    hdf = pd.HDFStore(datasets_dr + set_type + '_data.h5')
-    hdf.put('absolute', pd.DataFrame(), format='table', data_columns=True)
+    set_type = ['train', 'test']
+    for set in set_type:
+        # setup HDF5 file
+        hdf = pd.HDFStore(datasets_dr + set + '_data.h5')
+        hdf.put('absolute', pd.DataFrame(), format='table', data_columns=True)
 
-    for (id1, X), (id2, y) in tqdm(zip(features.iterrows(), labels.iterrows()),
-                         total=features.shape[0],
-                         desc='Writing {}_data.h5'.format(set_type),
-                         unit_scale=True, leave=True, ncols=100):
+        for (id1, X), (id2, y) in tqdm(zip(features.iterrows(), labels.iterrows()),
+                             total=features.shape[0],
+                             desc='Writing {}_data.h5'.format(set),
+                             unit_scale=True, leave=True, ncols=100):
 
-        # write row to HDF5 file
-        row = pd.concat([pd.DataFrame([X]), pd.DataFrame([y])], axis=1)
-        hdf.append(key='absolute', value=row, format='table', index=False)
+            # write row to HDF5 file
+            row = pd.concat([pd.DataFrame([X]), pd.DataFrame([y])], axis=1)
+            hdf.append(key='absolute', value=row, format='table', index=False)
 
-        # copy SDF files
-        sdf = str(id1) + '.sdf'
-        if set_type == 'train':
-            shutil.copyfile(SDF_dr + sdf, train_dr + sdf)
-        elif set_type == 'test':
-            shutil.copyfile(SDF_dr + sdf, test_dr + sdf)
+            # copy SDF files
+            sdf = str(id1) + '.sdf'
+            if set == 'train':
+                shutil.copyfile(SDF_dr + sdf, train_dr + sdf)
+            elif set == 'test':
+                shutil.copyfile(SDF_dr + sdf, test_dr + sdf)
 
-    hdf.close()
+        hdf.close()
 
 
 def split_train_test(dataframe):
