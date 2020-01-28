@@ -50,9 +50,9 @@ def main():
     logging.info('Starting dGhydr_{}.py.'.format(model_type))
 
     # Load in datasets.
-    train_df = pd.read_csv(datasets_dr + 'train_data.csv', index_col='Unnamed: 0')
-    test_df = pd.read_csv(datasets_dr + 'test_data.csv', index_col='Unnamed: 0')
-    cumulative_MAE_df = pd.read_csv(output_dr + 'dGoffset_' + model_type + '_BO_MAE.csv', index_col='Unnamed: 0')
+    train_df = pd.read_hdf(datasets_dr + 'train_data.h5', key='absolute')
+    test_df = pd.read_hdf(datasets_dr + 'test_data.h5', key='absolute')
+    mae_logger = pd.read_csv(output_dr + model_type + '_statistics.csv', index_col='Unnamed: 0')
     with open(path + 'kfolds.json', "rb") as jsonfile: kfolds = pickle.load(jsonfile)
 
     # testing
@@ -62,7 +62,7 @@ def main():
     logging.info('Testing complete.')
 
     # plot graphs
-    plot_convergence(cumulative_MAE_df, 40)
+    plot_convergence(mae_logger, 40)
 
     plot_scatter(predicted_offset,
                  [1, 'Experimental dGoffset (kcal/mol)'],
