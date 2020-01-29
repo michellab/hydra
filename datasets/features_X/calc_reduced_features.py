@@ -16,7 +16,6 @@ from rdkit.Chem import rdmolfiles, rdMolDescriptors
 from mordred import Calculator, descriptors
 
 # Path variables:
-path = './'
 datasets_dr = '../'
 sdf_dr = datasets_dr + 'sdffiles/'
 
@@ -32,11 +31,13 @@ def main():
     compiled_X_df = mordred_df.join(fp_df, on='ID')
     numeric_X = check_dataframe_is_numeric(compiled_X_df)
     float_X = convert_to_float(numeric_X)
-    normalised_X = normalise_and_split_datasets(float_X)
+    normalised_X = normalise_datasets(float_X)
     reduce_features(normalised_X, pca_threshold)
 
 
 def reduce_features(normalised_collection, pca_threshold):
+    """Returns PCA reduced DataFrame according to a pca_threshold parameter.
+    Original columns with the highest contribution to PCX are written to CSV."""
 
     print('Computing PCA, reducing features up to ' + str(round(pca_threshold * 100, 5)) + '% VE...')
     training_data = normalised_collection
@@ -94,17 +95,18 @@ def reduce_features(normalised_collection, pca_threshold):
     recovered_pc_df = pd.DataFrame(recovered_pc_dict)
 
     # Save recovered PCs to CSV
-    save_loc = path + 'recovered_PCs.csv'
+    save_loc = 'recovered_PCs.csv'
     save_csv(recovered_pc_df, save_loc)
 
     # Save reduced features to CSV
-    save_loc = path + 'reduced_features.csv'
+    save_loc = 'reduced_features.csv'
     save_csv(train_post_pca, save_loc)
 
     return train_post_pca
 
 
-def normalise_and_split_datasets(dataframe):
+def normalise_datasets(dataframe):
+    """Returns a normalised DataFrame"""
 
     # Calculate statistics, compute Z-scores, clean.
     print('Normalising dataframe...')
@@ -122,6 +124,7 @@ def normalise_and_split_datasets(dataframe):
 
 
 def convert_to_float(dataframe):
+    """Returns a DataFrame with all cells are converted to floats"""
 
     print('Converting dataframe to float...')
     float_df = dataframe.apply(pd.to_numeric).astype(float).sample(frac=1)
@@ -132,8 +135,8 @@ def convert_to_float(dataframe):
 
 
 def check_dataframe_is_numeric(dataframe):
-    """Iterate over all columns and check if numeric.
-    Returns: New DataFrame with removed"""
+    """Returns new DataFrame with non-numeric columns removed.
+    Dropped columns are saved to CSV."""
 
     columns_dropped = []
 
@@ -149,7 +152,7 @@ def check_dataframe_is_numeric(dataframe):
 
     # Save dropped columns to CSV.
     dropped_col_df = pd.DataFrame(columns_dropped, columns=['column dropped', 'at ID', 'non-numeric value'])
-    save_loc = path + 'dropped_features.csv'
+    save_loc = 'dropped_features.csv'
     save_csv(dropped_col_df, save_loc)
 
     print('Number of columns dropped:', (len(columns_dropped)))
@@ -157,6 +160,8 @@ def check_dataframe_is_numeric(dataframe):
 
 
 def get_fingerprints():
+    """Returns DataFrame and saves CSV of all calculated RDKit fingerprints for all
+    SDF files in the SDF directory (SDF_dr) specified in the path variables."""
 
     fp_table = []
     for sdf in glob.glob(sdf_dr + '*.sdf'):
@@ -172,8 +177,7 @@ def get_fingerprints():
 
         # Calculate fingerprint.
         fp = rdMolDescriptors.GetHashedAtomPairFingerprint(mol, 256)
-        for x in list(fp):
-            fp_row.append(x)
+        for x in list(fp): fp_row.append(x)
 
         fp_table.append(fp_row)
 
@@ -186,7 +190,7 @@ def get_fingerprints():
     fp_df = fp_df.set_index('ID')
 
     # Save to CSV.
-    save_loc = path + 'calculated_fingerprints.csv'
+    save_loc = 'calculated_fingerprints.csv'
     save_csv(fp_df, save_loc)
 
     print('Completed calculating fingerprints.')
@@ -194,8 +198,10 @@ def get_fingerprints():
 
 
 def get_descriptors():
+    """Returns DataFrame and saves CSV of all calculated Mordred descriptors for all
+    SDF files in the SDF directory (SDF_dr) specified in the path variables."""
 
-    save_loc = path + 'calculated_mordred_descriptors.csv'
+    save_loc = 'calculated_mordred_descriptors.csv'
     if os.path.exists(save_loc):
         mordred_df = pd.read_csv(save_loc, index_col='ID')
         print('Calculated Mordred descriptors loaded in.')
@@ -217,15 +223,12 @@ def get_descriptors():
         mordred_df = pd.DataFrame(columns=descriptors_list)
 
         # Generate features.
-        ID_lst = []
         for mol in suppl:
-            ID = mol.strip(sdf_dr)
-            ID_lst.append(ID)
             feat = calc.pandas(Chem.SDMolSupplier(mol))
             mordred_df = mordred_df.append(feat, ignore_index=True, sort=False)
 
         # Insert IDs as index.
-        # mordred_df.insert(0, 'ID', ID_lst)
+        ID_lst = [mol.strip(sdf_dr) for mol in suppl]
         mordred_df.set_index(ID_lst)
 
         # Save to CSV.
