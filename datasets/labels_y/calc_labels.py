@@ -1,69 +1,67 @@
 # General:
-import pandas as pd
 import os
-import numpy as np
+import pandas as pd
 
-# Path variables
-path = './'
+# Path variable:
 datasets_dr = '../'
-
-# Load in FreeSolve database.
-freesolv_df = pd.read_csv(datasets_dr + 'freesolv_database.txt', sep='; ', engine='python')
-
-def main():
-
-    # label generation
-    get_labels()
 
 
 def get_labels():
+    """
+    1. Retrieves experimental and calculated hydration free energies with associated uncertainties
+    from the FreeSolve database.
+    2. Offsets between experimental and calculated are calculated.
+    3. Offsets DataFrame and experimental hydration free energies (control) are written to CSV.
+    """
 
-    # Mobley IDs
-    freesolv_id = freesolv_df.loc[:, 'compound id (and file prefix)']
-    # Experimentally determined dGhydr
-    exp_val = freesolv_df.loc[:, 'experimental value (kcal/mol)']
-    # Associated error
-    exp_err = freesolv_df.loc[:, 'experimental uncertainty (kcal/mol)']
-    # Computationally determined dGhydr
-    calc_val = freesolv_df.loc[:, 'Mobley group calculated value (GAFF) (kcal/mol)']
-    # Associated error
-    calc_err = freesolv_df.loc[:, 'calculated uncertainty (kcal/mol)']
-    # null computationally determined dGhydr
-    calc_null = np.zeros(len(calc_val))
+    # List of columns names to be read from FreeSolve
+    cols = ['compound id (and file prefix)',                        # index
+            'experimental value (kcal/mol)',                        # 0
+            'experimental uncertainty (kcal/mol)',                  # 1
+            'Mobley group calculated value (GAFF) (kcal/mol)',      # 2
+            'calculated uncertainty (kcal/mol)']                    # 3
 
-    # nested dict containing ID keys with offset and error values
-    offset = {name: [exp - calc, (err1 ** 2 + err2 ** 2) ** 0.5]
-                      for name, exp, err1, calc, err2 in zip(freesolv_id, exp_val, exp_err, calc_val, calc_err)}
+    # Load experimental and calculated dGhydr from FreeSolve database, sorted according to Mobley IDs.
+    fs_df = pd.read_csv(filepath_or_buffer=datasets_dr + 'freesolv_database.txt', sep='; ', engine='python',
+                        usecols=cols, index_col='compound id (and file prefix)').sort_index()
 
-    # nested dict containing ID keys with null offsets and error values
-    null = {name: [exp - null, (err1 ** 2 + null ** 2) ** 0.5]
-            for name, exp, err1, null, err2 in zip(freesolv_id, exp_val, exp_err, calc_null, calc_null)}
+    # Offset between experimental and calculated hydration free energies.
+    offset = pd.DataFrame.from_dict(
+        data={name: [row[0] - row[2], sum_error(row[1], row[3])] for name, row in fs_df.iterrows()},
+        orient='index',
+        columns=['dGoffset (kcal/mol)', 'uncertainty (kcal/mol)']
+    )
 
-    offset_df = pd.DataFrame.from_dict(data=offset, orient='index',
-                                        columns=['dGoffset (kcal/mol)', 'uncertainty (kcal/mol)'])
-    offset_df.index.name = 'ID'
-
-    null_df = pd.DataFrame.from_dict(data=null, orient='index',
-                                     columns=['null dGoffset (kcal/mol)', 'null uncertainty (kcal/mol)'])
-    null_df.index.name = 'ID'
+    # Experimental hydration free energies only as control data set.
+    dGhydr = pd.DataFrame.from_dict(
+        data={name: [row[0], row[1]] for name, row in fs_df.iterrows()},
+        orient='index',
+        columns=['Experimental dGhydr (kcal/mol)', 'uncertainty (kcal/mol)']
+    )
 
     # Save to CSV.
-    save_csv(offset_df, path + 'experimental_labels.csv')
-    save_csv(null_df, path + 'null_experimental_labels.csv')
+    save_csv(dataframe=offset, pathname='experimental_labels.csv')
+    save_csv(dataframe=dGhydr, pathname='null_experimental_labels.csv')
 
-    return offset_df, null_df
+    return offset, dGhydr
+
+
+def sum_error(error1, error2):
+    """Returns sum propagated error between two values."""
+    return (error1 ** 2 + error2 ** 2) ** 0.5
 
 
 def save_csv(dataframe, pathname):
+    """Saves or overwrites DataFrame to CSV at given pathname,"""
 
     if os.path.exists(pathname):
         os.remove(pathname)
         dataframe.to_csv(path_or_buf=pathname, index=True)
-        print('Existing file overwritten.')
+        print('Existing {} overwritten.'.format(pathname))
     else:
         dataframe.to_csv(path_or_buf=pathname, index=True)
-    print('Completed writing {}.'.format(pathname))
+        print('{} written.'.format(pathname))
 
 
 if __name__ == '__main__':
-    main()
+    get_labels()
