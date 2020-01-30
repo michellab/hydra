@@ -47,7 +47,7 @@ epochs = 200
 best_mae = np.inf
 
 # load in data set
-train_df = pd.read_hdf(datasets_dr + 'null_train_data.h5', key='absolute')
+train_df = pd.read_csv(datasets_dr + 'null_train_data.csv', index_col='ID').iloc[:,:-1]
 num_input_nodes = len(train_df.columns) - 1
 
 
