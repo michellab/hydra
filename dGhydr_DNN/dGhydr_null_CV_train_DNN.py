@@ -34,8 +34,8 @@ if not os.path.exists(figures_dr):
 
 # Global variables:
 model_type = 'DNN'
-label_col = 'null dGoffset (kcal/mol)'
-label_u_col = 'null uncertainty (kcal/mol)'
+label_col = 'Experimental dGhydr (kcal/mol)'
+label_u_col = 'uncertainty (kcal/mol)'
 
 # KFold parameters:
 n_splits = 5  # Number of K-fold splits
