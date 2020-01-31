@@ -172,7 +172,7 @@ def train_model(train_set):
         history = model.fit(train_X, train_y, # training data
                             epochs=epochs,  # number of forward and backward runs
                             validation_data=(validate_X, validate_y),  # validation data
-                            verbose=0,  # 1 to input progress to terminal
+                            verbose=1,  # 1 to input progress to terminal
                             callbacks=[early_stopping],  # prevent over fitting
                             batch_size=30)  # increase efficiency
 
