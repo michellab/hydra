@@ -33,7 +33,7 @@ if not os.path.exists(figures_dr):
 
 # Global variables:
 model_type = 'DNN'
-offset_col_name = 'dGoffset (kcal/mol)'
+label_col = 'dGoffset (kcal/mol)'
 
 # DNN global variables
 n_calls = 40  # Number of Bayesian optimisation loops for hyperparameter optimisation, 40 is best for convergence, > 60 scales to very expensive
@@ -41,14 +41,14 @@ epochs = 200
 best_mae = np.inf
 
 # load in data set
-dtrain_df = pd.read_hdf(datasets_dr + 'dtrain_data.h5', key='relative')
+dtrain_df = pd.read_csv(datasets_dr + 'dtrain_data.csv', index_col='ID').iloc[:,:-1]
 num_input_nodes = len(dtrain_df.columns) - 1
 
 
 def main():
 
     # initiate log file
-    logging.basicConfig(filename= output_dr + 'training_logfile.txt',
+    logging.basicConfig(filename= output_dr + 'training_logfile.log',
                     filemode='a',
                     format='%(asctime)s - %(message)s',
                     level=logging.INFO)
@@ -118,8 +118,8 @@ def train_model(train_set):
     """
 
     # seperate features and labels and convert to numpy array
-    X = train_set.drop(offset_col_name, axis=1).to_numpy()
-    y = train_set.pop(offset_col_name).to_numpy()
+    X = train_set.drop(label_col, axis=1).to_numpy()
+    y = train_set.pop(label_col).to_numpy()
 
     # retrieve data sets
     train_X, validate_X, train_y, validate_y = train_test_split(
@@ -172,7 +172,7 @@ def train_model(train_set):
         history = model.fit(train_X, train_y, # training data
                             epochs=epochs,  # number of forward and backward runs
                             validation_data=(validate_X, validate_y),  # validation data
-                            verbose=1,  # input progress to terminal
+                            verbose=0,  # 1 to input progress to terminal
                             callbacks=[early_stopping],  # prevent over fitting
                             batch_size=30)  # increase efficiency
 
@@ -185,8 +185,8 @@ def train_model(train_set):
             writer = csv.writer(file)
             writer.writerow([mae, parameters])
 
-        print('\nMAE = {} kcal/mol\n'.format(mae))
-        print('Parameters: {}\n'.format(parameters))
+        print('\nMAE = {} kcal/mol'.format(mae))
+        print('Parameters: {}'.format(parameters))
 
         # If the regressor accuracy of the saved model is improved ...
         global best_mae
@@ -207,7 +207,7 @@ def train_model(train_set):
         return mae
 
     # a place for optimiser to start looking
-    default_parameters = [2, 261, 1, 61, 0.857, 0.933, 0.20006]
+    default_parameters = [1, 232, 1, 261, 0.952, 0.8, 0.05009]
 
     search_result = gp_minimize(func=fitness,
                                 dimensions=dimensions,
