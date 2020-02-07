@@ -86,7 +86,7 @@ def create_relative_train_test(dataframe, set_type):
                  pd.DataFrame({'uncertainty (kcal/mol)': sum_error(col[-1], row[-1])}, index=[str(id1)+'~'+str(id2)])],
                 axis=1
             )
-            if not df.iloc[0, 0] == 0:
+            if not id1 == id2:
                 with open(csv, 'a') as file:
                     df.to_csv(path_or_buf=file, mode='a', index=True, index_label='ID', header=file.tell() == 0)
 
