@@ -13,7 +13,7 @@ import tensorflow as tf
 from tensorflow import keras
 from sklearn.model_selection import train_test_split
 from tensorflow.python.keras import backend as K
-os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 3"  # current workstation contains 4 GPUs; exclude 1st
+os.environ["CUDA_VISIBLE_DEVICES"]="0, 1"  # current workstation contains 4 GPUs; exclude 1st
 
 # Sklearn
 from skopt import gp_minimize, dump
@@ -36,7 +36,7 @@ model_type = 'DNN'
 label_col = 'dGoffset (kcal/mol)'
 
 # DNN global variables
-n_calls = 40  # Number of Bayesian optimisation loops for hyperparameter optimisation, 40 is best for convergence, > 60 scales to very expensive
+n_calls = 60  # Number of Bayesian optimisation loops for hyperparameter optimisation, 40 is best for convergence, > 60 scales to very expensive
 epochs = 200
 best_mae = np.inf
 
@@ -193,6 +193,7 @@ def train_model(train_set):
         if mae < best_mae:
             # save the new model to harddisk.
             model.save(output_dr + 'ddGhydr_' + model_type + '_model.h5')
+            logging.info('New model saved.')
             # Update the regressor accuracy.
             best_mae = mae
 
