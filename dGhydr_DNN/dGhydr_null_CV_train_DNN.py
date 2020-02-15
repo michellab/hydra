@@ -42,8 +42,8 @@ n_splits = 5  # Number of K-fold splits
 random_state = 2  # Random number seed
 
 # DNN global variables
-n_calls = 60  # Number of Bayesian optimisation loops for hyperparameter optimisation, 40 is best for convergence, > 60 scales to very expensive
-epochs = 200
+n_calls = 100  # Number of Bayesian optimisation loops for hyperparameter optimisation, 40 is best for convergence, > 60 scales to very expensive
+epochs = 1000
 best_mae = np.inf
 
 # load in data set

@@ -1,25 +1,25 @@
-2020-02-15 11:22:32,514 - Starting dGhydr_null_CV_train_DNN.py.
-2020-02-15 11:22:32,514 - 
+2020-02-15 13:12:17,601 - Starting dGhydr_null_CV_train_DNN.py.
+2020-02-15 13:12:17,601 - 
 
 DNN parameters:
 
-n_calls = 60  # gp_minimize
-epochs = 200
+n_calls = 100  # gp_minimize
+epochs = 1000
 
-2020-02-15 11:22:32,541 - Pickled kfolds nested list at ./output_null/kfolds.json.
-2020-02-15 11:22:32,541 - Training fold 1.
-2020-02-15 11:38:15,595 - Saved ./output_null/fold_1_gp_minimize_result.pickle.
-2020-02-15 11:38:15,595 - Fold 1 final parameters: [1, 118, 2, 232, 0.8380000000000001, 0.8, 0.0001].
-2020-02-15 11:38:15,596 - Training fold 2.
-2020-02-15 11:49:39,195 - Saved ./output_null/fold_2_gp_minimize_result.pickle.
-2020-02-15 11:49:39,195 - Fold 2 final parameters: [2, 118, 2, 261, 0.8380000000000001, 0.952, 0.0001].
-2020-02-15 11:49:39,195 - Training fold 3.
-2020-02-15 12:05:26,003 - Saved ./output_null/fold_3_gp_minimize_result.pickle.
-2020-02-15 12:05:26,003 - Fold 3 final parameters: [1, 232, 1, 261, 0.971, 0.933, 0.10008].
-2020-02-15 12:05:26,003 - Training fold 4.
-2020-02-15 12:21:55,273 - Saved ./output_null/fold_4_gp_minimize_result.pickle.
-2020-02-15 12:21:55,273 - Fold 4 final parameters: [1, 90, 2, 261, 0.876, 0.895, 0.25005].
-2020-02-15 12:21:55,274 - Training fold 5.
-2020-02-15 12:35:13,524 - Saved ./output_null/fold_5_gp_minimize_result.pickle.
-2020-02-15 12:35:13,524 - Fold 5 final parameters: [2, 175, 2, 61, 0.8190000000000001, 0.8190000000000001, 0.0001].
-2020-02-15 12:35:13,525 - Finished dGhydr_null_CV_train_DNN.py.
+2020-02-15 13:12:17,627 - Pickled kfolds nested list at ./output_null/kfolds.json.
+2020-02-15 13:12:17,628 - Training fold 1.
+2020-02-15 14:19:02,013 - Saved ./output_null/fold_1_gp_minimize_result.pickle.
+2020-02-15 14:19:02,013 - Fold 1 final parameters: [2, 33, 2, 204, 0.952, 0.914, 0.5].
+2020-02-15 14:19:02,014 - Training fold 2.
+2020-02-15 15:02:53,089 - Saved ./output_null/fold_2_gp_minimize_result.pickle.
+2020-02-15 15:02:53,089 - Fold 2 final parameters: [1, 261, 1, 5, 0.99, 0.8190000000000001, 0.0001].
+2020-02-15 15:02:53,090 - Training fold 3.
+2020-02-15 15:50:56,478 - Saved ./output_null/fold_3_gp_minimize_result.pickle.
+2020-02-15 15:50:56,478 - Fold 3 final parameters: [1, 261, 2, 33, 0.8380000000000001, 0.8190000000000001, 0.40002].
+2020-02-15 15:50:56,479 - Training fold 4.
+2020-02-15 16:39:57,922 - Saved ./output_null/fold_4_gp_minimize_result.pickle.
+2020-02-15 16:39:57,922 - Fold 4 final parameters: [2, 90, 2, 147, 0.99, 0.914, 0.0001].
+2020-02-15 16:39:57,923 - Training fold 5.
+2020-02-15 17:21:30,673 - Saved ./output_null/fold_5_gp_minimize_result.pickle.
+2020-02-15 17:21:30,673 - Fold 5 final parameters: [2, 90, 1, 118, 0.971, 0.876, 0.0001].
+2020-02-15 17:21:30,674 - Finished dGhydr_null_CV_train_DNN.py.
