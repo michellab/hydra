@@ -108,9 +108,9 @@ def create_absolute_train_test(features, labels, set_type):
 
         # copy SDF files
         sdf = str(id1) + '.sdf'
-        if set == 'train':
+        if set_type == 'train':
             shutil.copyfile(SDF_dr + sdf, train_dr + sdf)
-        elif set == 'test':
+        elif set_type == 'test':
             shutil.copyfile(SDF_dr + sdf, test_dr + sdf)
 
 
